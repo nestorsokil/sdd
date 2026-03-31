@@ -18,7 +18,7 @@ If multiple approaches were considered, note why this one was chosen.
 
 ## Tasks
 - [ ] [small] **1. <Title>** — <what to do> (`path/to/file`)
-- [ ] [small] **2. <Title>** — <what to do> (`path/to/test`)
+- [ ] [small] **2. <Title>** — <what to do> (`path/to/test/file`)
 
 ## Verification
 How to confirm the bug is gone. Ideally a test that would have caught it.

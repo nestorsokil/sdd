@@ -8,9 +8,9 @@
 Any setup needed before implementation (branch, dependencies, config).
 
 ## Tasks
-- [ ] [small] **1. <Title>** — <what to do> (`path/to/file.java`)
-- [ ] [medium] **2. <Title>** — <what to do> (`path/to/file.java`)
-- [ ] [small] **3. <Title>** — <what to do> (`path/to/test/FileTest.java`)
+- [ ] [small] **1. <Title>** — <what to do> (`path/to/file`)
+- [ ] [medium] **2. <Title>** — <what to do> (`path/to/file`)
+- [ ] [small] **3. <Title>** — <what to do> (`path/to/test/file`)
 
 ## Verification
 How to verify the feature works end-to-end after all tasks are complete.
