@@ -64,9 +64,14 @@ the existing convention. Ask if unclear.
   clear headings. If a section is turning into a wall of text, restructure it.
 - **Pseudo-code over code**: describe logic in plain language or pseudo-code. Use full
   code snippets only when ambiguity would remain without them.
-- **Interactive creation**: during spec phases, surface high-level options and let the
-  user steer. Don't silently decide on meaningful trade-offs — ask when a choice matters.
-  Skip minor details that don't change the shape of the solution.
+- **Ask, don't assume**: during requirements and design phases, ask clarifying questions
+  when the intent is ambiguous, a constraint is unstated, or multiple valid interpretations
+  exist. Don't guess at business rules, user expectations, or integration behavior — surface
+  the question and let the user decide. Skip questions with obvious answers or that don't
+  change the shape of the solution.
+- **Interactive creation**: surface high-level options and let the user steer. Don't
+  silently decide on meaningful trade-offs — present the choice and your recommendation,
+  then wait for direction.
 - **Spec status**: every spec file carries a status line (`> Status: draft`). Update it
   as the work progresses:
   - `draft` — being written or revised
@@ -82,6 +87,10 @@ Goal: capture *what* the feature does and *why*.
 Read the template: `./references/requirements-template.md`
 
 Key principles:
+- Before writing, ask clarifying questions if the user's description is vague or leaves
+  meaningful gaps — who uses this, what triggers it, what happens on failure, what are
+  the boundaries. Don't draft a requirements doc built on guesses; get the answers first.
+  But don't interrogate — if the answer is obvious from context, just use it.
 - Acceptance criteria should be testable assertions, not vague descriptions.
   Bad: "The system should be fast." Good: "P95 latency < 200ms for single-item lookup."
 - List constraints and non-goals explicitly. Constraints prevent over-engineering.
@@ -99,6 +108,10 @@ Goal: capture *how* the feature will be built — components, interfaces, data f
 Read the template: `./references/design-template.md`
 
 Key principles:
+- Ask clarifying questions when the design has ambiguous integration points, unclear
+  data ownership, or multiple reasonable approaches. Don't assume how an upstream service
+  behaves or what a consumer expects — ask. Skip questions where the codebase or
+  requirements doc already provides a clear answer.
 - Every design decision should trace back to a requirement or constraint.
 - Describe component boundaries and interfaces, not internal implementation details.
 - Include a data flow section. This catches integration issues early.
