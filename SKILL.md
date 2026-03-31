@@ -111,6 +111,10 @@ Key principles:
 - Before drafting, explore the codebase. Read the modules and interfaces the feature
   will touch or extend. Understand existing patterns, naming conventions, and architecture
   so the design fits the project — not a generic greenfield proposal.
+- Before drafting, check if other specs exist in the specs directory. Skim
+  approved/implemented design docs for components, interfaces, or patterns that overlap
+  with this feature. Reference existing specs rather than re-describing shared interfaces.
+  This is a quick scan for awareness — don't deep-read every spec.
 - Ask clarifying questions when the design has ambiguous integration points, unclear
   data ownership, or multiple reasonable approaches. Don't assume how an upstream service
   behaves or what a consumer expects — ask. Skip questions where the codebase or
