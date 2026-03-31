@@ -199,7 +199,17 @@ When invoked as `/sdd $ARGUMENTS` or via natural language, route based on the fi
 | `design <name>` | Skip requirements, start from design |
 | `tasks <name>` | Skip to task breakdown (design exists or is trivial) |
 | `bugfix <name>` | Abbreviated flow using `./references/bugfix-template.md` — root cause → fix approach → tasks, no requirements phase |
-| `resume <name>` | Read existing specs from `specs/<name>/` and continue where left off |
+| `resume <name>` | Read existing specs from `specs/<name>/`, determine current state, and continue (see below) |
+
+**Resuming (`resume <name>`):** Read all existing spec files in `specs/<name>/`. Determine
+the current state by checking:
+1. Which spec files exist and their `> Status:` line.
+2. If tasks.md exists and is approved, how many tasks are checked off.
+3. If any spec is in `draft` status, it was being worked on or needs re-approval.
+
+Present a brief summary of where things stand ("requirements approved, design approved,
+3 of 8 tasks complete — next up is task 4: ...") and confirm with the user before
+continuing.
 
 If invoked with no arguments, ask the user which flow they want to start.
 
