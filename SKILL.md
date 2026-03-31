@@ -108,6 +108,9 @@ Goal: capture *how* the feature will be built — components, interfaces, data f
 Read the template: `./references/design-template.md`
 
 Key principles:
+- Before drafting, explore the codebase. Read the modules and interfaces the feature
+  will touch or extend. Understand existing patterns, naming conventions, and architecture
+  so the design fits the project — not a generic greenfield proposal.
 - Ask clarifying questions when the design has ambiguous integration points, unclear
   data ownership, or multiple reasonable approaches. Don't assume how an upstream service
   behaves or what a consumer expects — ask. Skip questions where the codebase or
