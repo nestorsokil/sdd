@@ -23,10 +23,3 @@ and the agent will pick the right flow.
 | `bugfix <name>` | Abbreviated bug fix flow |
 | `resume <name>` | Pick up existing specs from `specs/<name>/` |
 
-### Rules
-
-- Do NOT advance past a phase until I explicitly approve.
-- Keep spec documents concise — requirements ~30-60 lines, design ~30-50 lines.
-- Track spec status: set `draft` when writing, `approved` on my sign-off, `implemented` when all tasks are done.
-- During implementation, work through tasks.md one at a time, checking each off.
-- If requirements or design turn out wrong mid-flight, stop, amend the spec, and get re-approval before continuing.
