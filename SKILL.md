@@ -164,9 +164,24 @@ Once tasks.md is approved, implement one task at a time:
 
 1. State which task you're starting (by number and title).
 2. Implement it.
-3. Check it off in tasks.md: `- [x] Task description`.
-4. Briefly state what changed and what's next.
-5. Continue to the next task unless the user intervenes.
+3. Run unit tests relevant to the change. Unit tests are fast and cheap — run them
+   after every task, not just at the end.
+4. Check it off in tasks.md: `- [x] Task description`.
+5. Briefly state what changed and what's next.
+6. Continue to the next task unless the user intervenes.
+
+**Testing guidance:**
+- **Unit tests**: run after every task. If the task changes logic, there should be a
+  unit test covering it — either existing or newly written.
+- **Integration / performance / property tests**: these are typically heavier (require
+  containers, external services, long runtimes). Consult the project's test setup to
+  understand how easy they are to run. In most cases, suggest running them manually
+  to the user rather than triggering them automatically. At the end of implementation,
+  remind the user which heavier test suites should be run.
+- **Integration test coverage**: before implementation begins, check whether existing
+  integration tests can be easily extended to cover the new feature. If the feature
+  requires significant new test infrastructure (new fixtures, containers, test harnesses),
+  flag this early — include it in the task breakdown and consult with the user on scope.
 
 When the last task is checked off, set status to `implemented` in requirements.md,
 design.md, and tasks.md. The specs are now reference documentation.
