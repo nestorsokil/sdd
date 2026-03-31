@@ -15,7 +15,7 @@ Specs live as markdown files in the repo, versioned alongside code, and serve as
 | File | Purpose |
 |------|---------|
 | `SKILL.md` | Main skill instructions — loaded by the agent when SDD is triggered |
-| `AGENT-SNIPPET.md` | Paste into a project's agent instructions file (CLAUDE.md, AGENTS.md, etc.) to enable SDD in that project |
+| `AGENT-SNIPPET.md` | Paste into a project's agent instructions file (AGENTS.md, GEMINI.md, etc.) to enable SDD for non-Claude-Code agents |
 | `references/requirements-template.md` | Template for the requirements phase |
 | `references/design-template.md` | Template for the design phase |
 | `references/tasks-template.md` | Template for the task breakdown phase |
