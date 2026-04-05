@@ -108,13 +108,18 @@ Goal: capture *how* the feature will be built — components, interfaces, data f
 Read the template: `./references/design-template.md`
 
 Key principles:
-- Before drafting, explore the codebase. Read the modules and interfaces the feature
-  will touch or extend. Understand existing patterns, naming conventions, and architecture
-  so the design fits the project — not a generic greenfield proposal.
-- Before drafting, check if other specs exist in the specs directory. Skim
-  approved/implemented design docs for components, interfaces, or patterns that overlap
-  with this feature. Reference existing specs rather than re-describing shared interfaces.
-  This is a quick scan for awareness — don't deep-read every spec.
+- Before drafting, run two agents in parallel:
+  1. A codebase exploration agent — map the modules and interfaces the feature will
+     touch, existing patterns, naming conventions, and any existing specs that overlap.
+     Report back: affected files, relevant patterns, existing interfaces to reuse.
+  2. An architecture design and review agent — given the requirements doc and a brief
+     description of the feature, propose the key design decisions (components,
+     data ownership, communication pattern, failure modes) and flag any architectural
+     concerns before a full draft is written.
+  Synthesize both outputs into design.md. This ensures the design presented at the
+  approval gate is already architecture-reviewed, not just drafted.
+- If no suitable agents are available, fall back to exploring the codebase sequentially
+  before drafting, then self-review for architectural issues.
 - Ask clarifying questions when the design has ambiguous integration points, unclear
   data ownership, or multiple reasonable approaches. Don't assume how an upstream service
   behaves or what a consumer expects — ask. Skip questions where the codebase or
@@ -164,7 +169,12 @@ After writing, present the doc and wait for approval. On approval, set status to
 
 ## Implementation phase
 
-Once tasks.md is approved, implement one task at a time:
+Once tasks.md is approved, before writing any code, spawn a clean code and design
+review agent on the files the feature will touch most. Review findings with the user —
+surface existing issues in the landing zone before building on top of them. Skip this
+step if the files were recently reviewed or the feature is greenfield.
+
+Then implement one task at a time:
 
 1. State which task you're starting (by number and title).
 2. Implement it.
@@ -187,8 +197,11 @@ Once tasks.md is approved, implement one task at a time:
   requires significant new test infrastructure (new fixtures, containers, test harnesses),
   flag this early — include it in the task breakdown and consult with the user on scope.
 
-When the last task is checked off, set status to `implemented` in requirements.md,
-design.md, and tasks.md. The specs are now reference documentation.
+When the last task is checked off, spawn a clean code review agent and a security
+review agent in parallel on all files changed during implementation. Present findings
+to the user. Only set status to `implemented` in requirements.md, design.md, and
+tasks.md if there are no High or Critical findings — or if the user explicitly accepts
+outstanding findings. The specs are then reference documentation.
 
 If during implementation you discover the design is wrong or incomplete, STOP.
 Explain what you found and suggest an amendment to design.md or tasks.md before

@@ -7,7 +7,7 @@
 
 ## Spec-Driven Development
 
-This project uses spec-driven development. Read `<path-to-sdd-skill>/SKILL.md`
+This project uses spec-driven development. Read `~/.claude/skills/sdd/SKILL.md`
 before acting on any of the commands below.
 
 ### Trigger patterns
@@ -22,4 +22,3 @@ and the agent will pick the right flow.
 | `tasks <name>` | Skip to task breakdown |
 | `bugfix <name>` | Abbreviated bug fix flow |
 | `resume <name>` | Pick up existing specs from `specs/<name>/` |
-
