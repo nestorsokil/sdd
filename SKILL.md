@@ -245,10 +245,45 @@ Then implement one task at a time:
   requires significant new test infrastructure (new fixtures, containers, test harnesses),
   flag this early — include it in the task breakdown and consult with the user on scope.
 
-When the last task is checked off, spawn a clean code review agent and a security
-review agent in parallel on all files changed during implementation. Present findings
-to the user. Only set status to `implemented` in requirements.md, design.md, and
-tasks.md if there are no High or Critical findings — or if the user explicitly accepts
+When the last task is checked off, run the **post-implementation review suite**
+in parallel on all files changed during implementation. The default suite:
+
+1. **Clean code review** — naming, structure, abstractions, dead code.
+2. **Security review** — injection, authz, secrets, input validation, common
+   OWASP issues.
+3. **Spec-conformance review** — reads requirements.md + design.md + the diff.
+   Verifies every acceptance criterion is satisfied, the implementation matches
+   the design (component boundaries, interfaces, data flow), and no constraint
+   or non-goal is violated. Findings here default to **High** — building the
+   wrong thing is the worst class of bug.
+4. **Test-quality review** — examines tests added or modified during
+   implementation. Flags: tautological tests (mock returns X, assert X),
+   missing edge cases (empty, null, boundary, error paths, concurrency),
+   tests that assert "no exception" instead of actual behavior, over-mocked
+   tests that no longer prove anything about real integration.
+5. **Correctness review** — narrow scope (no overlap with clean code):
+   off-by-one, null/empty handling, error propagation, race conditions,
+   resource leaks, incorrect assumptions about library behavior.
+
+Optional, run when relevant:
+- **Performance review** — only if requirements.md states perf criteria
+  (latency, throughput, memory). Otherwise skip; speculative perf review is noise.
+- **Observability review** — checks that new code emits the metrics declared
+  in design.md's metrics section and that log lines have appropriate levels
+  and enough context. Run if the team relies on dashboards or oncall.
+- **Docs/README sync** — quick check whether business-logic changes require a
+  README or external doc update. One pass, not a full agent.
+
+Use the user's project-specific agents where defined (e.g. `clean-code-reviewer`,
+`security-reviewer`). For reviews without a dedicated agent, dispatch the
+generic `Agent` tool with an inline prompt scoped to that review's concern.
+
+Run all applicable reviews in parallel — single message, multiple Agent calls.
+Synthesize findings into one report grouped by severity (Critical / High /
+Medium / Low), then present to the user.
+
+Set status to `implemented` in requirements.md, design.md, and tasks.md only
+if there are no High or Critical findings — or if the user explicitly accepts
 outstanding findings. The specs are then reference documentation.
 
 If during implementation you discover the design is wrong or incomplete, STOP.
