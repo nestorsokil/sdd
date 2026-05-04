@@ -77,6 +77,12 @@ the existing convention. Ask if unclear.
   - `draft` — being written or revised
   - `approved` — user has signed off; do not edit without re-opening
   - `implemented` — all tasks complete; spec is now reference documentation
+- **Spec freshness**: if during implementation the code diverges from the spec —
+  whether the user asked for a steer, you discovered a design flaw, or you
+  noticed drift after editing a file — pause and reconcile. Either the spec was
+  wrong (update it via the steering rules below) or the code is wrong (revert
+  it). Never let them drift silently. The spec is the source of truth; stale
+  specs are worse than no specs.
 
 ---
 
@@ -222,15 +228,45 @@ will touch most. Review findings with the user — surface existing issues in
 the landing zone before building on top of them. Skip this step if the files
 were recently reviewed or the feature is greenfield.
 
-Then implement one task at a time:
+**Default execution model: one task per agent turn.**
+
+The agent implements exactly one task, returns control, and stops. The user
+reviews the git diff, commits manually, then asks for the next task — possibly
+after `/compact` or in a fresh agent window. This keeps each task reviewable
+in isolation, keeps context lean, and puts the human in the loop for each commit.
+
+The agent does NOT auto-continue, does NOT stage files, does NOT create commits.
+Any steering, drift findings, or amendments must land in the relevant spec doc
+(requirements.md / design.md / tasks.md) — not in a chat report. The user will
+review the spec edits in the same git diff as the code.
+
+For each task:
 
 1. State which task you're starting (by number and title).
 2. Implement it.
-3. Run unit tests relevant to the change. Unit tests are fast and cheap — run them
-   after every task, not just at the end.
-4. Check it off in tasks.md: `- [x] Task description`.
-5. Briefly state what changed and what's next.
-6. Continue to the next task unless the user intervenes.
+3. Run unit tests relevant to the change. Unit tests are fast and cheap — run
+   them after every task, not just at the end.
+4. **Drift scan**: compare the diff against the spec sections listed in the
+   task's "Spec touchpoints" line. If anything in the code diverges, apply the
+   steering rules below and update the affected spec section *in the same diff*.
+   Do NOT check the task off until the spec and code agree.
+5. Check it off in tasks.md: `- [x] Task description`. (Markdown edit, not a
+   git commit — the user commits everything together.)
+6. State which task is next, then STOP. Do not start it.
+
+### Auto-continue (opt-in only)
+
+If the user explicitly asks to "auto-continue", "run all tasks", "go through
+the whole thing", or similar — only then chain tasks without stopping. Even in
+auto-continue, pause for confirmation on any tweak/amend/pivot, and never
+auto-commit.
+
+### Resuming in a fresh window
+
+After `/compact` or in a new agent window, treat the next task as a cold start.
+Read the spec files, the task's "Spec touchpoints", and the relevant existing
+code before doing anything. The `resume <name>` subcommand handles this; the
+user can also just say "next task" once the spec context is loaded.
 
 **Testing guidance:**
 - **Unit tests**: run after every task. If the task changes logic, there should be a
@@ -268,9 +304,6 @@ in parallel on all files changed during implementation. The default suite:
 Optional, run when relevant:
 - **Performance review** — only if requirements.md states perf criteria
   (latency, throughput, memory). Otherwise skip; speculative perf review is noise.
-- **Observability review** — checks that new code emits the metrics declared
-  in design.md's metrics section and that log lines have appropriate levels
-  and enough context. Run if the team relies on dashboards or oncall.
 - **Docs/README sync** — quick check whether business-logic changes require a
   README or external doc update. One pass, not a full agent.
 
@@ -287,20 +320,92 @@ if there are no High or Critical findings — or if the user explicitly accepts
 outstanding findings. The specs are then reference documentation.
 
 If during implementation you discover the design is wrong or incomplete, STOP.
-Explain what you found and suggest an amendment to design.md or tasks.md before
-continuing. Catching design issues during implementation is exactly why the specs exist.
+Use the steering rules below to classify the change and route it correctly.
+Catching design issues during implementation is exactly why the specs exist.
 
-## Handling mid-flight changes
+## Steering during implementation
 
-**Requirements change after approval:**
-Set the affected doc's status back to `draft`, make the change, present the delta,
-and get re-approval. Propagate to design.md and tasks.md if affected — re-approve
-each touched doc. Don't silently update a spec; the approval gate keeps the human
-in the loop.
+The spec is not frozen at approval. Users will steer mid-flight — small renames,
+new requirements, scope shifts, or full pivots. The job is to absorb the steer,
+keep the spec in sync with the code, and not let drift accumulate.
 
-**Design turns out wrong during implementation:**
-Stop. Amend design.md (and tasks.md if the task list changes), set status back to
-`draft`, get re-approval, then continue.
+Classify every steer into one of three types and announce which mode you're using.
+The user can override the classification if you got it wrong.
+
+### Type 1: Tweak (small, local, no contract change)
+
+Examples: rename a variable or field, swap a library, change a default value,
+drop a sub-task, reorder steps within a task, fix a typo in the spec.
+
+**Process:**
+1. Apply the change to the code (or note where it will apply in upcoming tasks).
+2. Update the affected spec section inline.
+3. Status stays `approved`. No re-approval gate.
+4. Briefly note the edit: "Tweak applied: <what>. Updated <spec section>."
+5. Continue.
+
+### Type 2: Amendment (changes contract or scope, but localized)
+
+Examples: new acceptance criterion, new endpoint field, changed error code,
+new constraint, additional task, changed data ownership between two existing
+components.
+
+**Process:**
+1. Stop current task if mid-implementation.
+2. Set the affected spec doc(s) back to `draft`.
+3. Draft the delta — show the *diff* of what's changing in requirements.md,
+   design.md, and/or tasks.md, not a full rewrite.
+4. Present and wait for approval.
+5. On approval, set affected docs back to `approved`.
+6. Re-run the cross-artifact analyze step on touched docs (Phase 3.5) — small
+   amendments often introduce coverage gaps or naming inconsistencies.
+7. Resume implementation.
+
+### Type 3: Pivot (invalidates approved direction)
+
+Examples: whole new architectural approach, dropped feature, fundamental
+constraint added (e.g. "this needs to work offline now"), reversed assumption.
+
+**Process:**
+1. Stop. Do not continue current task.
+2. Set affected docs to `draft`.
+3. Re-run the relevant phase from the top (re-design, re-tasks, possibly
+   re-requirements). Don't try to patch — the approved direction is gone.
+4. Identify which already-completed tasks are now invalidated. For each:
+   propose either an unwind task or a follow-up task to bring code in line
+   with the new direction. Surface this explicitly to the user.
+5. Get re-approval per phase as usual.
+6. Re-run cross-artifact analyze before resuming.
+
+### Explicit steering keywords
+
+The user can prefix a steer to skip classification:
+- `tweak: <change>` → Type 1
+- `amend: <change>` → Type 2
+- `pivot: <change>` → Type 3
+- `update spec` → re-derive the affected spec sections from the current code
+  state (use when the agent missed drift or after a manual edit by the user)
+
+Without keywords, classify and announce ("Treating this as an amendment because
+it adds a new acceptance criterion. Drafting delta now."). User corrects if wrong.
+
+### Drift detection per task
+
+After completing each task, before checking it off, do a quick drift scan:
+look at the diff against the spec sections this task was supposed to implement.
+If anything in the code diverges from the spec (renamed field, different return
+shape, skipped a constraint), surface it as a tweak or amendment before moving
+on. Cheap when done per task; expensive at the end.
+
+### Stale checked-off tasks
+
+If a tweak or amendment invalidates a task that is already checked off (e.g. a
+field rename affects a task that already shipped), do not silently re-edit
+history. Either:
+- Add a follow-up task that brings the shipped code in line with the change, or
+- Add a sub-step to the next task that touches the same area.
+
+Either way, the change must appear in tasks.md so the trail is preservable.
 
 ---
 
