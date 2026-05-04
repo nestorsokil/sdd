@@ -230,7 +230,7 @@ When invoked as `/sdd $ARGUMENTS` or via natural language, route based on the fi
 | `spec <name>` | Full 3-phase flow starting from requirements |
 | `design <name>` | Skip requirements, start from design |
 | `tasks <name>` | Skip to task breakdown (design exists or is trivial) |
-| `bugfix <name>` | Abbreviated flow using `./references/bugfix-template.md` — root cause → fix approach → tasks, no requirements phase |
+| `bugfix <name>` | Abbreviated, **test-first** flow using `./references/bugfix-template.md` — root cause → reproduction → failing regression test → fix approach → tasks. If the user can't describe repro steps, propose exploratory tests from code-reading hypotheses. No requirements phase. |
 | `resume <name>` | Read existing specs from `specs/<name>/`, determine current state, and continue (see below) |
 
 **Resuming (`resume <name>`):** Read all existing spec files in `specs/<name>/`. Determine
