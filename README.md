@@ -2,13 +2,66 @@
 
 > Work in progress.
 
-A personal skill that tailors Spec-Driven Development to my workflow and preferences.
-Not a generic SDD framework — opinions are baked in.
+A personal skill that tailors Spec-Driven Development to my workflow and
+preferences. Not a generic SDD framework — opinions are baked in.
 
 ## What it does
 
-Guides an agent through a structured spec-before-code workflow: requirements → design → tasks → implementation.
-Specs live as markdown files in the repo, versioned alongside code, and serve as lightweight documentation after the feature ships.
+Guides an agent through a structured spec-before-code workflow:
+
+```
+requirements.md  →  design.md  →  tasks.md  ║  (analyze + implementation: opt-in)
+     ↑ approve        ↑ approve      ↑ approve
+```
+
+The **spec set is the deliverable.** Three short markdown files (requirements,
+design, tasks) live in the repo, version-controlled alongside code, and serve
+as both engineering-review artifacts and lightweight documentation after a
+feature ships.
+
+Implementation is a separate, explicit step — not an automatic continuation
+of the spec flow. You review the spec, hand it to a colleague or a future
+agent, then trigger implementation when ready.
+
+## Workflow at a glance
+
+1. **Requirements** — what the feature does and why; testable acceptance
+   criteria with stable IDs (`AC-1`, `C-1`, `NG-1`).
+2. **Design** — how it will be built; component boundaries, data flow,
+   alternatives considered. A codebase-exploration agent and an architecture
+   agent run in parallel before drafting.
+3. **Tasks** — 5–15 ordered, file-scoped tasks, each pointing back to the
+   spec sections it implements (drift detection touchpoint).
+4. **Stop.** The spec is reviewed by humans.
+5. **(Opt-in) Analyze** — cross-artifact consistency check: every requirement
+   has a task, no constraint violations, no naming drift, no orphan tasks.
+6. **(Opt-in) Implement** — one task per agent turn. Agent stops after each
+   task. User reviews the git diff and commits manually. Drift between code
+   and spec gets reconciled into the spec in the same diff.
+7. **(Opt-in) Post-impl review suite** — clean code + security +
+   spec-conformance + test-quality + correctness, all in parallel.
+
+Three steer types absorb mid-flight changes: **tweak** (apply inline),
+**amend** (delta + re-approval), **pivot** (re-run phase). Re-opened
+implemented specs use a dedicated `amending` status.
+
+## How it differs from neighbors
+
+| | This skill | superpowers | spec-kit |
+|---|---|---|---|
+| Output | requirements + design + tasks | brainstorm spec + plan | constitution + spec + plan + tasks |
+| Code in tasks | pseudo-code, file paths | full TDD step blocks | structured |
+| Per-step ceremony | low — one task per turn, no auto-commit | high — strict TDD red-green-refactor | medium |
+| Implementation default | **opt-in** (spec set is the deliverable) | continues to execution | continues to implement |
+| Status lifecycle | explicit (`draft / approved / implemented / amending`) | implicit | implicit |
+| Mid-flight steering | classified (tweak / amend / pivot) | reactive | not formalized |
+| Constitution / project rules | defers to `CLAUDE.md` | not formalized | first-class artifact |
+| Bug fix flow | dedicated, **test-first** with exploratory-test fallback | same as feature flow | same as feature flow |
+| Escape hatch | yes — skip SDD for <50 LOC trivial changes | no | no |
+
+Sweet spot: solo or small-team work where the spec is itself a review
+artifact, you want structure without TDD ceremony, and you commit by hand
+after reviewing each task.
 
 ## Files
 
@@ -19,19 +72,21 @@ Specs live as markdown files in the repo, versioned alongside code, and serve as
 | `references/requirements-template.md` | Template for the requirements phase |
 | `references/design-template.md` | Template for the design phase |
 | `references/tasks-template.md` | Template for the task breakdown phase |
-| `references/bugfix-template.md` | Template for the abbreviated bug fix flow |
+| `references/bugfix-template.md` | Template for the test-first bug fix flow |
 | `references/research-template.md` | Template for the optional research doc |
 
 ## Usage
 
-In Claude Code, trigger naturally ("let's spec this out") or explicitly with `/sdd <subcommand>`:
+In Claude Code, trigger naturally ("let's spec this out") or explicitly with
+`/sdd <subcommand>`:
 
 ```
-/sdd spec <feature-name>    full flow: requirements → design → tasks → implement
-/sdd design <feature-name>  skip requirements, start from design
-/sdd tasks <feature-name>   skip to task breakdown
-/sdd bugfix <name>          abbreviated bug fix flow
-/sdd resume <name>          continue from existing specs
+/sdd spec <name>       requirements → design → tasks (stops at tasks approval)
+/sdd design <name>     skip requirements, start from design
+/sdd tasks <name>      skip to task breakdown
+/sdd bugfix <name>     test-first bug fix flow
+/sdd implement <name>  build against an approved spec set, one task per turn
+/sdd resume <name>     continue from existing specs
 ```
 
 For other agents, paste `AGENT-SNIPPET.md` into the project's instructions file.
