@@ -17,8 +17,9 @@ and the agent will pick the right flow.
 
 | Subcommand | What it does |
 |------------|-------------|
-| `spec <name>` | Full flow: requirements → design → tasks → implement |
-| `design <name>` | Skip requirements, start from design |
-| `tasks <name>` | Skip to task breakdown |
-| `bugfix <name>` | Abbreviated bug fix flow |
-| `resume <name>` | Pick up existing specs from `specs/<name>/` |
+| `spec <name>` | Spec flow only: requirements → design → tasks. Stops at tasks.md approval. |
+| `design <name>` | Skip requirements, start from design. Stops at tasks.md approval. |
+| `tasks <name>` | Skip to task breakdown. Stops at tasks.md approval. |
+| `bugfix <name>` | Abbreviated, test-first bug fix flow. |
+| `implement <name>` | Build against an approved spec set, one task per turn. |
+| `resume <name>` | Pick up existing specs from `specs/<name>/`. |

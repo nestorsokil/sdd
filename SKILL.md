@@ -26,12 +26,37 @@ but misses edge cases, violates constraints, or solves the wrong problem. SDD fo
 a think-then-build cadence: each phase produces a short markdown artifact the human
 reviews before the next phase begins.
 
+## When NOT to use SDD
+
+Before invoking the workflow, sanity-check the scope. SDD is overhead for
+genuinely small changes. If all of the following are true, skip SDD and just
+do the work:
+
+- Change fits in <50 LOC and one or two files.
+- No new behavior — only a typo, config bump, log line, formatting, or
+  rename.
+- No new contract (no API change, no schema change, no new dependency).
+- A test failure or commit message would be enough context for a future
+  reader.
+
+When in doubt, ask: "this looks small — do you want me to just do it, or run
+SDD?" Don't unilaterally generate a 3-doc spec for a one-line fix.
+
 ## The three phases
 
 ```
-requirements.md  →  design.md  →  tasks.md  →  implementation
-     ↑ approve        ↑ approve      ↑ approve      ↑ one task at a time
+requirements.md  →  design.md  →  tasks.md  ║  (analyze + implementation: opt-in)
+     ↑ approve        ↑ approve      ↑ approve
 ```
+
+**The spec set is the deliverable.** Once tasks.md is approved, the workflow
+stops. The three docs are an artifact for engineering review — a colleague,
+a reviewer, or a future implementer reads them and decides what's next.
+
+Do NOT proceed to implementation automatically. Implementation only starts
+when the user explicitly says "let's implement", "start building", "do task
+1", or similar. At that point, run the cross-artifact analyze step (Phase 3.5)
+and then the implementation phase as described below.
 
 Every phase ends with an explicit approval gate. Do NOT advance to the next phase
 until the user says "approved", "lgtm", "go", "next", "y", or similar affirmative.
@@ -74,9 +99,14 @@ the existing convention. Ask if unclear.
   then wait for direction.
 - **Spec status**: every spec file carries a status line (`> Status: draft`). Update it
   as the work progresses:
-  - `draft` — being written or revised
+  - `draft` — being written for the first time
   - `approved` — user has signed off; do not edit without re-opening
   - `implemented` — all tasks complete; spec is now reference documentation
+  - `amending` — previously `implemented`, now being changed for a follow-up.
+    Use this instead of dropping back to `draft`, so the history "this was
+    shipped once" stays visible. Treat the change as an amendment per the
+    steering rules; status returns to `approved` after sign-off, then
+    `implemented` once the new tasks ship.
 - **Spec freshness**: if during implementation the code diverges from the spec —
   whether the user asked for a steer, you discovered a design flaw, or you
   noticed drift after editing a file — pause and reconcile. Either the spec was
@@ -126,6 +156,9 @@ Key principles:
   approval gate is already architecture-reviewed, not just drafted.
 - If no suitable agents are available, fall back to exploring the codebase sequentially
   before drafting, then self-review for architectural issues.
+- **Greenfield**: if the project is empty or the feature touches no existing code
+  (new module, new service, new repo), skip the codebase-exploration agent —
+  there is nothing to explore. Run only the architecture agent.
 - Ask clarifying questions when the design has ambiguous integration points, unclear
   data ownership, or multiple reasonable approaches. Don't assume how an upstream service
   behaves or what a consumer expects — ask. Skip questions where the codebase or
@@ -171,7 +204,10 @@ Key principles:
 - Mark complexity: `[small]`, `[medium]`, `[large]` to guide review cadence.
 - 5-15 tasks per feature. Fewer = too coarse. More = split the feature.
 
-After writing, present the doc and wait for approval. On approval, set status to `approved`.
+After writing, present the doc and wait for approval. On approval, set status
+to `approved`. **This is the end of the default workflow.** The spec set is now
+ready for engineering review. Do not begin implementation unless the user
+explicitly asks for it.
 
 ## Phase 3.5: Cross-artifact analyze (after tasks, before implementation)
 
@@ -415,10 +451,11 @@ When invoked as `/sdd $ARGUMENTS` or via natural language, route based on the fi
 
 | Subcommand | Behavior |
 |------------|----------|
-| `spec <name>` | Full 3-phase flow starting from requirements |
-| `design <name>` | Skip requirements, start from design |
-| `tasks <name>` | Skip to task breakdown (design exists or is trivial) |
+| `spec <name>` | Full 3-phase spec flow (requirements → design → tasks). **Stops at tasks.md approval.** Spec set is the deliverable. |
+| `design <name>` | Skip requirements, start from design. Stops at tasks.md approval. |
+| `tasks <name>` | Skip to task breakdown (design exists or is trivial). Stops at tasks.md approval. |
 | `bugfix <name>` | Abbreviated, **test-first** flow using `./references/bugfix-template.md` — root cause → reproduction → failing regression test → fix approach → tasks. If the user can't describe repro steps, propose exploratory tests from code-reading hypotheses. No requirements phase. |
+| `implement <name>` | Begin implementation against an approved spec set. Runs Phase 3.5 (analyze) then implements one task per turn. Use this when the spec is reviewed and ready to build. |
 | `resume <name>` | Read existing specs from `specs/<name>/`, determine current state, and continue (see below) |
 
 **Resuming (`resume <name>`):** Read all existing spec files in `specs/<name>/`. Determine
