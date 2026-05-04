@@ -17,7 +17,7 @@ description: >
 
 A lightweight, phased workflow for building features through structured specs before code.
 The specs are plain markdown files that live in the repo — they serve as durable context
-across sessions and are version-controlled alongside code.
+across sessions and are version-controlled alongside code. They should also be usable as human-readable documentation of features.
 
 ## Why this exists
 
@@ -167,12 +167,60 @@ Key principles:
 
 After writing, present the doc and wait for approval. On approval, set status to `approved`.
 
+## Phase 3.5: Cross-artifact analyze (after tasks, before implementation)
+
+Once tasks.md is approved, run a single consistency check across requirements,
+design, and tasks **before** any code is written. This is the last cheap moment
+to catch coverage gaps and contradictions; finding them mid-implementation
+costs a rewrite.
+
+What to check:
+- **Requirement coverage**: every acceptance criterion in requirements.md is
+  satisfied by at least one task. List uncovered criteria.
+- **Constraint compliance**: every constraint and non-goal in requirements.md
+  is respected by design and tasks. Flag violations
+  (e.g. "no new dependencies" + a task that adds one; "must run in <200ms" +
+  no perf-sensitive design choice).
+- **Invariant testability**: every invariant declared in design.md (data
+  ownership, ordering, idempotency, auth boundaries, failure modes) is either
+  covered by an existing test or by a task that adds one.
+- **Naming consistency**: function names, field names, endpoint paths, type
+  names, metric names match across design.md and tasks.md. A method called
+  `clearLayers()` in design but `clearFullLayers()` in tasks is a bug.
+- **Task traceability**: every task points back to a requirement or design
+  element. Tasks with no parent are scope creep — flag for removal or
+  justification.
+- **Placeholder scan**: any "TBD", "TODO", "fill in later", or vague stubs
+  in any of the three docs.
+
+Output a short report with sections:
+- `Covered` — one line summary
+- `Gaps` — uncovered requirements / untested invariants
+- `Contradictions` — name mismatches, conflicting statements
+- `Constraint violations` — design/tasks that break a stated constraint
+- `Orphan tasks` — tasks with no parent in requirements/design
+- `Placeholders` — any unresolved stubs
+
+Present the report to the user.
+
+- If everything is `Covered` and no other section has entries, proceed to
+  implementation.
+- If anything appears in `Gaps`, `Contradictions`, `Constraint violations`,
+  or `Placeholders`: set the status of every affected doc back to `draft`,
+  fix the issue, and re-approve before implementation.
+- `Orphan tasks` should be discussed with the user — either drop them, or
+  amend requirements/design to legitimize them (then re-approve).
+
+This is a small, fast check — not a full re-review. Do not re-litigate
+approved decisions.
+
 ## Implementation phase
 
-Once tasks.md is approved, before writing any code, spawn a clean code and design
-review agent on the files the feature will touch most. Review findings with the user —
-surface existing issues in the landing zone before building on top of them. Skip this
-step if the files were recently reviewed or the feature is greenfield.
+Once the analyze report is clean and tasks.md is still approved, before writing
+any code, spawn a clean code and design review agent on the files the feature
+will touch most. Review findings with the user — surface existing issues in
+the landing zone before building on top of them. Skip this step if the files
+were recently reviewed or the feature is greenfield.
 
 Then implement one task at a time:
 
