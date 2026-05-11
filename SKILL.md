@@ -45,11 +45,11 @@ SDD?" Don't unilaterally generate a 3-doc spec for a one-line fix.
 ## The three phases
 
 ```
-requirements.md  →  design.md  →  tasks.md  ║  (analyze + implementation: opt-in)
-     ↑ approve        ↑ approve      ↑ approve
+1-requirements.md  →  2-design.md  →  3-tasks.md  ║  (analyze + implementation: opt-in)
+       ↑ approve          ↑ approve       ↑ approve
 ```
 
-**The spec set is the deliverable.** Once tasks.md is approved, the workflow
+**The spec set is the deliverable.** Once 3-tasks.md is approved, the workflow
 stops. The three docs are an artifact for engineering review — a colleague,
 a reviewer, or a future implementer reads them and decides what's next.
 
@@ -68,15 +68,19 @@ fine — acknowledge which phase you're skipping and proceed to the next one.
 
 ```
 specs/
-  <feature-name>/
-    requirements.md
-    design.md
-    tasks.md
+  <NNN>-<feature-name>/
+    1-requirements.md
+    2-design.md
+    3-tasks.md
     research.md          (optional — only when design alternatives were discussed)
     diagrams/            (optional — drawio files + exported images)
       *.drawio
       *.png / *.svg
 ```
+
+`<NNN>` is a zero-padded 3-digit sequence number (`001`, `002`, …). When creating
+a new spec set, scan `specs/` for the highest existing `<NNN>` and increment by one.
+If `specs/` is empty or doesn't exist, start at `001`.
 
 If the project already has a different convention (e.g., `docs/specs/`, `design/`), follow
 the existing convention. Ask if unclear.
@@ -116,7 +120,7 @@ the existing convention. Ask if unclear.
 
 ---
 
-## Phase 1: Requirements (`requirements.md`)
+## Phase 1: Requirements (`1-requirements.md`)
 
 Goal: capture *what* the feature does and *why*.
 
@@ -137,7 +141,7 @@ Key principles:
 
 After writing, present the doc and wait for approval. On approval, set status to `approved`.
 
-## Phase 2: Design (`design.md`)
+## Phase 2: Design (`2-design.md`)
 
 Goal: capture *how* the feature will be built — components, interfaces, data flow.
 
@@ -152,7 +156,7 @@ Key principles:
      description of the feature, propose the key design decisions (components,
      data ownership, communication pattern, failure modes) and flag any architectural
      concerns before a full draft is written.
-  Synthesize both outputs into design.md. This ensures the design presented at the
+  Synthesize both outputs into 2-design.md. This ensures the design presented at the
   approval gate is already architecture-reviewed, not just drafted.
 - If no suitable agents are available, fall back to exploring the codebase sequentially
   before drafting, then self-review for architectural issues.
@@ -173,7 +177,7 @@ Key principles:
   One line each — no alerting thresholds or implementation detail.
 - Name the alternatives you considered and why you rejected them. If significant
   exploration happened during spec creation, capture it in `research.md` instead of
-  bloating this doc — but keep a brief summary here so design.md stays self-contained.
+  bloating this doc — but keep a brief summary here so 2-design.md stays self-contained.
 - If the feature touches persistence, include schema. If it touches APIs, include
   request/response shapes.
 
@@ -188,7 +192,7 @@ direction won.
 Do NOT create it for routine decisions. Only when real back-and-forth happened and the
 fuller context is worth preserving as documentation.
 
-## Phase 3: Tasks (`tasks.md`)
+## Phase 3: Tasks (`3-tasks.md`)
 
 Goal: an ordered checklist of implementation steps, each small enough to complete
 in one focused session.
@@ -211,23 +215,23 @@ explicitly asks for it.
 
 ## Phase 3.5: Cross-artifact analyze (after tasks, before implementation)
 
-Once tasks.md is approved, run a single consistency check across requirements,
+Once 3-tasks.md is approved, run a single consistency check across requirements,
 design, and tasks **before** any code is written. This is the last cheap moment
 to catch coverage gaps and contradictions; finding them mid-implementation
 costs a rewrite.
 
 What to check:
-- **Requirement coverage**: every acceptance criterion in requirements.md is
+- **Requirement coverage**: every acceptance criterion in 1-requirements.md is
   satisfied by at least one task. List uncovered criteria.
-- **Constraint compliance**: every constraint and non-goal in requirements.md
+- **Constraint compliance**: every constraint and non-goal in 1-requirements.md
   is respected by design and tasks. Flag violations
   (e.g. "no new dependencies" + a task that adds one; "must run in <200ms" +
   no perf-sensitive design choice).
-- **Invariant testability**: every invariant declared in design.md (data
+- **Invariant testability**: every invariant declared in 2-design.md (data
   ownership, ordering, idempotency, auth boundaries, failure modes) is either
   covered by an existing test or by a task that adds one.
 - **Naming consistency**: function names, field names, endpoint paths, type
-  names, metric names match across design.md and tasks.md. A method called
+  names, metric names match across 2-design.md and 3-tasks.md. A method called
   `clearLayers()` in design but `clearFullLayers()` in tasks is a bug.
 - **Task traceability**: every task points back to a requirement or design
   element. Tasks with no parent are scope creep — flag for removal or
@@ -251,14 +255,14 @@ Present the report to the user.
   or `Placeholders`: set the status of every affected doc back to `draft`,
   fix the issue, and re-approve before implementation.
 - `Orphan tasks` should be discussed with the user — either drop them, or
-  amend requirements/design to legitimize them (then re-approve).
+  amend 1-requirements.md / 2-design.md to legitimize them (then re-approve).
 
 This is a small, fast check — not a full re-review. Do not re-litigate
 approved decisions.
 
 ## Implementation phase
 
-Once the analyze report is clean and tasks.md is still approved, before writing
+Once the analyze report is clean and 3-tasks.md is still approved, before writing
 any code, spawn a clean code and design review agent on the files the feature
 will touch most. Review findings with the user — surface existing issues in
 the landing zone before building on top of them. Skip this step if the files
@@ -273,7 +277,7 @@ in isolation, keeps context lean, and puts the human in the loop for each commit
 
 The agent does NOT auto-continue, does NOT stage files, does NOT create commits.
 Any steering, drift findings, or amendments must land in the relevant spec doc
-(requirements.md / design.md / tasks.md) — not in a chat report. The user will
+(1-requirements.md / 2-design.md / 3-tasks.md) — not in a chat report. The user will
 review the spec edits in the same git diff as the code.
 
 For each task:
@@ -286,7 +290,7 @@ For each task:
    task's "Spec touchpoints" line. If anything in the code diverges, apply the
    steering rules below and update the affected spec section *in the same diff*.
    Do NOT check the task off until the spec and code agree.
-5. Check it off in tasks.md: `- [x] Task description`. (Markdown edit, not a
+5. Check it off in 3-tasks.md: `- [x] Task description`. (Markdown edit, not a
    git commit — the user commits everything together.)
 6. State which task is next, then STOP. Do not start it.
 
@@ -323,7 +327,7 @@ in parallel on all files changed during implementation. The default suite:
 1. **Clean code review** — naming, structure, abstractions, dead code.
 2. **Security review** — injection, authz, secrets, input validation, common
    OWASP issues.
-3. **Spec-conformance review** — reads requirements.md + design.md + the diff.
+3. **Spec-conformance review** — reads 1-requirements.md + 2-design.md + the diff.
    Verifies every acceptance criterion is satisfied, the implementation matches
    the design (component boundaries, interfaces, data flow), and no constraint
    or non-goal is violated. Findings here default to **High** — building the
@@ -338,7 +342,7 @@ in parallel on all files changed during implementation. The default suite:
    resource leaks, incorrect assumptions about library behavior.
 
 Optional, run when relevant:
-- **Performance review** — only if requirements.md states perf criteria
+- **Performance review** — only if 1-requirements.md states perf criteria
   (latency, throughput, memory). Otherwise skip; speculative perf review is noise.
 - **Docs/README sync** — quick check whether business-logic changes require a
   README or external doc update. One pass, not a full agent.
@@ -351,7 +355,7 @@ Run all applicable reviews in parallel — single message, multiple Agent calls.
 Synthesize findings into one report grouped by severity (Critical / High /
 Medium / Low), then present to the user.
 
-Set status to `implemented` in requirements.md, design.md, and tasks.md only
+Set status to `implemented` in 1-requirements.md, 2-design.md, and 3-tasks.md only
 if there are no High or Critical findings — or if the user explicitly accepts
 outstanding findings. The specs are then reference documentation.
 
@@ -389,8 +393,8 @@ components.
 **Process:**
 1. Stop current task if mid-implementation.
 2. Set the affected spec doc(s) back to `draft`.
-3. Draft the delta — show the *diff* of what's changing in requirements.md,
-   design.md, and/or tasks.md, not a full rewrite.
+3. Draft the delta — show the *diff* of what's changing in 1-requirements.md,
+   2-design.md, and/or 3-tasks.md, not a full rewrite.
 4. Present and wait for approval.
 5. On approval, set affected docs back to `approved`.
 6. Re-run the cross-artifact analyze step on touched docs (Phase 3.5) — small
@@ -441,7 +445,7 @@ history. Either:
 - Add a follow-up task that brings the shipped code in line with the change, or
 - Add a sub-step to the next task that touches the same area.
 
-Either way, the change must appear in tasks.md so the trail is preservable.
+Either way, the change must appear in 3-tasks.md so the trail is preservable.
 
 ---
 
@@ -451,20 +455,24 @@ When invoked as `/sdd $ARGUMENTS` or via natural language, route based on the fi
 
 | Subcommand | Behavior |
 |------------|----------|
-| `spec <name>` | Full 3-phase spec flow (requirements → design → tasks). **Stops at tasks.md approval.** Spec set is the deliverable. |
-| `design <name>` | Skip requirements, start from design. Stops at tasks.md approval. |
-| `tasks <name>` | Skip to task breakdown (design exists or is trivial). Stops at tasks.md approval. |
+| `spec <name>` | Full 3-phase spec flow (1-requirements.md → 2-design.md → 3-tasks.md). **Stops at 3-tasks.md approval.** Spec set is the deliverable. |
+| `design <name>` | Skip requirements, start from 2-design.md. Stops at 3-tasks.md approval. |
+| `tasks <name>` | Skip to task breakdown (design exists or is trivial). Stops at 3-tasks.md approval. |
 | `bugfix <name>` | Abbreviated, **test-first** flow using `./references/bugfix-template.md` — root cause → reproduction → failing regression test → fix approach → tasks. If the user can't describe repro steps, propose exploratory tests from code-reading hypotheses. No requirements phase. |
 | `implement <name>` | Begin implementation against an approved spec set. Runs Phase 3.5 (analyze) then implements one task per turn. Use this when the spec is reviewed and ready to build. |
-| `resume <name>` | Read existing specs from `specs/<name>/`, determine current state, and continue (see below) |
+| `resume <name>` | Read existing specs from `specs/<NNN>-<name>/`, determine current state, and continue (see below). Also accepts just `resume <NNN>` — search for the directory matching that number. |
 
-**Resuming (`resume <name>`):** Read all existing spec files in `specs/<name>/`. Determine
-the current state by checking:
+**Numbering new specs:** Before creating `specs/<NNN>-<name>/`, run `ls specs/` (or the
+project's equivalent path) to find the highest existing `<NNN>`, then increment by one.
+If `specs/` doesn't exist yet, create it and start at `001`.
+
+**Resuming (`resume <name>`):** Search `specs/` for a directory matching the name or
+number. Read all spec files inside. Determine the current state by checking:
 1. Which spec files exist and their `> Status:` line.
-2. If tasks.md exists and is approved, how many tasks are checked off.
+2. If 3-tasks.md exists and is approved, how many tasks are checked off.
 3. If any spec is in `draft` status, it was being worked on or needs re-approval.
 
-Present a brief summary of where things stand ("requirements approved, design approved,
+Present a brief summary of where things stand ("1-requirements.md approved, 2-design.md approved,
 3 of 8 tasks complete — next up is task 4: ...") and confirm with the user before
 continuing.
 
