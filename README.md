@@ -1,7 +1,5 @@
 # SDD Skill
 
-> Work in progress.
-
 A personal skill that tailors Spec-Driven Development to my workflow and
 preferences. Not a generic SDD framework — opinions are baked in.
 
@@ -38,8 +36,11 @@ agent, then trigger implementation when ready.
 6. **(Opt-in) Implement** — one task per agent turn. Agent stops after each
    task. User reviews the git diff and commits manually. Drift between code
    and spec gets reconciled into the spec in the same diff.
-7. **(Opt-in) Post-impl review suite** — clean code + security +
-   spec-conformance + test-quality + correctness, all in parallel.
+7. **(Opt-in) Self-review** — after each task the agent offers to run a
+   self-review suite (spec-conformance + correctness + security by default;
+   clean-code / test-quality added when the diff warrants). Defer it and
+   batch-review later with `/sdd review <name>`. Each task carries a `Review:`
+   stamp (`pending` / `passed`) so deferred reviews are never lost.
 
 Three steer types absorb mid-flight changes: **tweak** (apply inline),
 **amend** (delta + re-approval), **pivot** (re-run phase). Re-opened
@@ -86,6 +87,7 @@ In Claude Code, trigger naturally ("let's spec this out") or explicitly with
 /sdd tasks <name>      skip to task breakdown
 /sdd bugfix <name>     test-first bug fix flow
 /sdd implement <name>  build against an approved spec set, one task per turn
+/sdd review <name>     run self-review over tasks with deferred reviews
 /sdd resume <name>     continue from existing specs
 ```
 

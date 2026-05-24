@@ -200,11 +200,17 @@ in one focused session.
 Read the template: `./references/tasks-template.md`
 
 Key principles:
+- Each task should leave the repo in a working, tested state — it builds, all
+  pre-existing tests pass, and any new logic it adds is covered by a unit test in
+  the same change. Enforced by the implementation completion gate. Unit tests
+  ride *with* their task; do not split "write the tests" into a trailing task.
 - Each task should be independently verifiable — after completing it, something
   observable changed (a test passes, an endpoint responds, a log line appears).
 - Include file paths. This makes each task actionable without re-reading the design.
-- Order so each builds on the previous. Foundation first, then logic, then wiring,
-  then tests.
+- Order so each builds on the previous. Foundation first, then logic, then wiring.
+  Integration tests are usually their own dedicated task near the end, unless a
+  task's behavior is naturally covered by the project's existing integration-test
+  granularity (see implementation Testing guidance).
 - Mark complexity: `[small]`, `[medium]`, `[large]` to guide review cadence.
 - 5-15 tasks per feature. Fewer = too coarse. More = split the feature.
 
@@ -263,10 +269,10 @@ approved decisions.
 ## Implementation phase
 
 Once the analyze report is clean and 3-tasks.md is still approved, before writing
-any code, spawn a clean code and design review agent on the files the feature
-will touch most. Review findings with the user — surface existing issues in
-the landing zone before building on top of them. Skip this step if the files
-were recently reviewed or the feature is greenfield.
+any code, **offer** to spawn a clean code and design review agent on the files
+the feature will touch most — surfacing existing issues in the landing zone
+before building on top of them. This is opt-in: ask the user, and skip it by
+default if the files were recently reviewed or the feature is greenfield.
 
 **Default execution model: one task per agent turn.**
 
@@ -283,16 +289,38 @@ review the spec edits in the same git diff as the code.
 For each task:
 
 1. State which task you're starting (by number and title).
-2. Implement it.
-3. Run unit tests relevant to the change. Unit tests are fast and cheap — run
-   them after every task, not just at the end.
-4. **Drift scan**: compare the diff against the spec sections listed in the
-   task's "Spec touchpoints" line. If anything in the code diverges, apply the
-   steering rules below and update the affected spec section *in the same diff*.
-   Do NOT check the task off until the spec and code agree.
+2. Implement it. Keep the diff scoped to this task only — no opportunistic
+   refactors, reformatting, or unrelated changes. A task's diff should be one
+   self-contained, reviewable unit; mixed diffs are the main thing that slows
+   human review.
+3. **Completion gate** — the task is not done until all three hold. If any
+   fails, fix it before checking off (do not defer to a later task):
+   - **Build passes**: the project compiles / type-checks. A task that leaves
+     the repo unbuildable is not complete.
+   - **Pre-existing tests stay green**: run the unit tests relevant to the
+     change (fast and cheap — run after every task, not just at the end). No
+     task may leave a previously-passing test broken. A genuine regression
+     halts the loop — see [Regressions](#testing-guidance) below.
+   - **New logic is covered**: any new behavior this task introduces has at
+     least one unit test *in this same diff* — either new or an extended
+     existing test. A task that adds logic without a test is not done. (Pure
+     wiring/config tasks with no new logic are exempt; say so explicitly.)
+   This gate keeps the repo in a working, tested state after every task, so any
+   checked-off task is a safe stopping point.
+4. **Drift scan**: compare the diff against the task's "Spec touchpoints" and
+   reconcile any divergence per Steering → Drift detection (below) before
+   checking off — update the affected spec section *in the same diff*. Do NOT
+   check the task off until the spec and code agree.
 5. Check it off in 3-tasks.md: `- [x] Task description`. (Markdown edit, not a
    git commit — the user commits everything together.)
-6. State which task is next, then STOP. Do not start it.
+6. **Offer self-review**: ask the user whether to run the self-review suite on
+   this task's diff now, or defer it. Record the outcome in the task's
+   `Review:` stamp:
+   - `passed` — review ran, no unresolved High/Critical findings (note any
+     accepted ones).
+   - `pending` — user deferred; the task ships unreviewed for now and can be
+     batch-reviewed later.
+7. State which task is next, then STOP. Do not start it.
 
 ### Auto-continue (opt-in only)
 
@@ -308,56 +336,89 @@ Read the spec files, the task's "Spec touchpoints", and the relevant existing
 code before doing anything. The `resume <name>` subcommand handles this; the
 user can also just say "next task" once the spec context is loaded.
 
-**Testing guidance:**
-- **Unit tests**: run after every task. If the task changes logic, there should be a
-  unit test covering it — either existing or newly written.
-- **Integration / performance / property tests**: these are typically heavier (require
-  containers, external services, long runtimes). Consult the project's test setup to
-  understand how easy they are to run. In most cases, suggest running them manually
-  to the user rather than triggering them automatically. At the end of implementation,
-  remind the user which heavier test suites should be run.
+**Testing guidance:** <a name="testing-guidance"></a>
+- **Unit tests**: enforced by the per-task completion gate (step 3) — new logic
+  ships with a covering test in the same diff, and pre-existing tests stay green.
+- **Regressions**: if the completion gate surfaces a broken pre-existing test,
+  first decide whether it's a direct consequence of this task's change or an
+  unrelated regression. For an unrelated regression, explain it and STOP for
+  user input before proceeding — do not paper over it to make the gate pass.
+- **Integration tests — default to a separate task.** Unit-level coverage rides
+  with each implementation task (the gate); integration tests are typically
+  heavier (containers, external services, long runtimes) and are best batched
+  into their own dedicated task near the end of the breakdown. Exception: a task
+  warrants its own inline integration test when the user explicitly asks for it,
+  or when the agent judges — based on the granularity of the project's existing
+  integration tests — that this task's behavior is naturally covered at that
+  level (e.g. the project already has a per-endpoint integration test and this
+  task adds an endpoint). When the agent makes that call, state the reasoning
+  and let the user override.
+- **Integration / performance / property tests** are heavier — consult the
+  project's test setup. In most cases suggest running them manually rather than
+  triggering automatically. At the end of implementation, remind the user which
+  heavier suites should be run.
 - **Integration test coverage**: before implementation begins, check whether existing
   integration tests can be easily extended to cover the new feature. If the feature
   requires significant new test infrastructure (new fixtures, containers, test harnesses),
   flag this early — include it in the task breakdown and consult with the user on scope.
 
-When the last task is checked off, run the **post-implementation review suite**
-in parallel on all files changed during implementation. The default suite:
+### Self-review suite
 
-1. **Clean code review** — naming, structure, abstractions, dead code.
-2. **Security review** — injection, authz, secrets, input validation, common
+The self-review suite is **opt-in** — it never runs automatically. It runs on a
+diff scope: either a single task's diff (when the user accepts the offer in
+step 6) or the union of all `pending` tasks' diffs (a batch run, see below).
+
+Default suite (run in parallel — single message, multiple Agent calls):
+
+1. **Spec-conformance review** — reads 1-requirements.md + 2-design.md + the
+   diff. Verifies every acceptance criterion in scope is satisfied, the
+   implementation matches the design (component boundaries, interfaces, data
+   flow), and no constraint or non-goal is violated. Findings default to
+   **High** — building the wrong thing is the worst class of bug.
+2. **Correctness review** — off-by-one, null/empty handling, error propagation,
+   race conditions, resource leaks, incorrect assumptions about library behavior.
+3. **Security review** — injection, authz, secrets, input validation, common
    OWASP issues.
-3. **Spec-conformance review** — reads 1-requirements.md + 2-design.md + the diff.
-   Verifies every acceptance criterion is satisfied, the implementation matches
-   the design (component boundaries, interfaces, data flow), and no constraint
-   or non-goal is violated. Findings here default to **High** — building the
-   wrong thing is the worst class of bug.
-4. **Test-quality review** — examines tests added or modified during
-   implementation. Flags: tautological tests (mock returns X, assert X),
-   missing edge cases (empty, null, boundary, error paths, concurrency),
-   tests that assert "no exception" instead of actual behavior, over-mocked
-   tests that no longer prove anything about real integration.
-5. **Correctness review** — narrow scope (no overlap with clean code):
-   off-by-one, null/empty handling, error propagation, race conditions,
-   resource leaks, incorrect assumptions about library behavior.
 
-Optional, run when relevant:
+Opt-in extras — add when the diff warrants it (state which you're adding and why):
+- **Clean code review** — naming, structure, abstractions, dead code. Add for
+  large or structurally complex tasks.
+- **Test-quality review** — tautological tests (mock returns X, assert X),
+  missing edge cases (empty, null, boundary, error paths, concurrency), tests
+  that assert "no exception" instead of behavior, over-mocking. Add when the
+  task added or changed meaningful test logic.
 - **Performance review** — only if 1-requirements.md states perf criteria
   (latency, throughput, memory). Otherwise skip; speculative perf review is noise.
 - **Docs/README sync** — quick check whether business-logic changes require a
   README or external doc update. One pass, not a full agent.
 
 Use the user's project-specific agents where defined (e.g. `clean-code-reviewer`,
-`security-reviewer`). For reviews without a dedicated agent, dispatch the
-generic `Agent` tool with an inline prompt scoped to that review's concern.
+`security-reviewer`). For reviews without a dedicated agent, dispatch the generic
+`Agent` tool with an inline prompt scoped to that review's concern. Synthesize
+findings into one report grouped by severity (Critical / High / Medium / Low),
+present it to the user, then update the `Review:` stamp of every task in scope.
 
-Run all applicable reviews in parallel — single message, multiple Agent calls.
-Synthesize findings into one report grouped by severity (Critical / High /
-Medium / Low), then present to the user.
+### Batch review (`review <name>`)
 
-Set status to `implemented` in 1-requirements.md, 2-design.md, and 3-tasks.md only
-if there are no High or Critical findings — or if the user explicitly accepts
-outstanding findings. The specs are then reference documentation.
+When tasks shipped with `Review: pending`, run the self-review suite once over
+the union of their diffs instead of per task. This is the "review everything
+afterwards" path: implement fast with reviews deferred, then do one review pass.
+After it runs, update every covered task's stamp to `passed` (noting accepted
+findings). The `review <name>` subcommand drives this; the user can also just
+say "review the pending tasks".
+
+### Finishing up
+
+When the last task is checked off:
+- If every task is `Review: passed` (or the user accepted outstanding findings),
+  set status to `implemented` in 1-requirements.md, 2-design.md, and 3-tasks.md.
+  The specs are now reference documentation.
+- If any task is still `Review: pending`, the feature can still be marked
+  `implemented`, but say so explicitly and recommend a batch `review <name>`
+  before the work is considered done. Never silently treat unreviewed code as
+  reviewed.
+- Do not set `implemented` while a review run surfaced unresolved High or
+  Critical findings.
 
 If during implementation you discover the design is wrong or incomplete, STOP.
 Use the steering rules below to classify the change and route it correctly.
@@ -460,6 +521,7 @@ When invoked as `/sdd $ARGUMENTS` or via natural language, route based on the fi
 | `tasks <name>` | Skip to task breakdown (design exists or is trivial). Stops at 3-tasks.md approval. |
 | `bugfix <name>` | Abbreviated, **test-first** flow using `./references/bugfix-template.md` — root cause → reproduction → failing regression test → fix approach → tasks. If the user can't describe repro steps, propose exploratory tests from code-reading hypotheses. No requirements phase. |
 | `implement <name>` | Begin implementation against an approved spec set. Runs Phase 3.5 (analyze) then implements one task per turn. Use this when the spec is reviewed and ready to build. |
+| `review <name>` | Run the self-review suite over all tasks marked `Review: pending` in `specs/<NNN>-<name>/3-tasks.md`, then stamp them `passed`. Use after implementing with reviews deferred. |
 | `resume <name>` | Read existing specs from `specs/<NNN>-<name>/`, determine current state, and continue (see below). Also accepts just `resume <NNN>` — search for the directory matching that number. |
 
 **Numbering new specs:** Before creating `specs/<NNN>-<name>/`, run `ls specs/` (or the
@@ -470,11 +532,12 @@ If `specs/` doesn't exist yet, create it and start at `001`.
 number. Read all spec files inside. Determine the current state by checking:
 1. Which spec files exist and their `> Status:` line.
 2. If 3-tasks.md exists and is approved, how many tasks are checked off.
-3. If any spec is in `draft` status, it was being worked on or needs re-approval.
+3. How many checked-off tasks are still `Review: pending` (shipped but unreviewed).
+4. If any spec is in `draft` status, it was being worked on or needs re-approval.
 
 Present a brief summary of where things stand ("1-requirements.md approved, 2-design.md approved,
-3 of 8 tasks complete — next up is task 4: ...") and confirm with the user before
-continuing.
+3 of 8 tasks complete, 2 pending review — next up is task 4: ...") and confirm with
+the user before continuing. If tasks are pending review, mention `review <name>`.
 
 If invoked with no arguments, ask the user which flow they want to start.
 
