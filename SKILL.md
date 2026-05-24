@@ -6,7 +6,10 @@ description: >
   "spec", "sdd", "design first", "write a spec", "spec-driven", or asks to plan a feature
   before implementing it. Also trigger when the user says things like "let's think through
   this before coding", "I want to design this properly", "break this down into phases",
-  or references requirements/design/tasks documents for a feature. This skill produces
+  or references requirements/design/tasks documents for a feature. Trigger the roadmap
+  flow when the user says "roadmap", "breakdown", "break this into features", "split the
+  project", or describes a large greenfield/brownfield effort needing decomposition before
+  any single spec. This skill produces
   markdown spec files (requirements, design, tasks) that live in the repo alongside code
   and act as durable context for implementation. Do NOT trigger for one-off
   questions, quick bug fixes the user wants done immediately, or when the user just wants
@@ -68,6 +71,7 @@ fine — acknowledge which phase you're skipping and proceed to the next one.
 
 ```
 specs/
+  roadmap.md             (optional — greenfield/multi-feature decomposition; living index)
   <NNN>-<feature-name>/
     1-requirements.md
     2-design.md
@@ -119,6 +123,67 @@ the existing convention. Ask if unclear.
   specs are worse than no specs.
 
 ---
+
+## Phase 0: Roadmap (`specs/roadmap.md`, project decomposition)
+
+Goal: turn a high-level description into an ordered list of feature-sized
+chunks, each of which then feeds the per-feature spec flow.
+
+**When to use it:** any large multi-feature effort described only at a high
+level, where the feature boundaries aren't obvious yet — a greenfield project
+*or* a large change to an existing (brownfield) codebase. The user has "here's
+the whole thing I want to build/change" and needs it split before any single
+`spec <name>` makes sense.
+
+**When NOT to use it:** a single, well-scoped feature — go straight to `spec`.
+A roadmap for one feature is overhead.
+
+Read the template: `./references/roadmap-template.md`
+
+**Process:**
+1. Clarify project-level intent first — vision, primary users, hard constraints,
+   the MVP boundary, and anything explicitly out of scope. Same ask-don't-assume
+   discipline as Phase 1, but at project granularity. Don't decompose on guesses.
+2. Understand the landscape, then propose a decomposition:
+   - **Brownfield** — run a codebase-exploration agent *and* an architecture
+     agent in parallel (same pairing as Phase 2). The exploration agent maps the
+     modules, seams, and existing patterns the effort will touch; the
+     architecture agent uses that to propose feature boundaries and ordering.
+   - **Greenfield** — skip codebase exploration (nothing to explore); run only
+     the architecture agent.
+   In both cases the architecture agent proposes boundaries, dependency ordering,
+   and which foundational/cross-cutting work (data model, auth, shared infra)
+   comes first.
+3. **Slice features vertically.** Each feature should be a deployable increment —
+   a thin path through the stack that delivers user-observable value on its own,
+   not a horizontal layer ("all the DB work", "all the API work") that ships
+   nothing until a sibling lands. Prefer features that leave the system shippable
+   when complete. Foundational/cross-cutting work that genuinely can't be sliced
+   into a vertical (shared schema, auth substrate) is allowed as an early feature,
+   but call it out as such rather than defaulting to layer-by-layer splits.
+4. Present the proposed feature list with your recommendation. This is
+   interactive: surface the trade-offs of each boundary and let the user
+   merge, split, or reorder. Don't silently decide the cut points.
+5. On approval, write `specs/roadmap.md` from the template — assign `NNN` in
+   dependency order, every feature `planned`. Set the roadmap `Status: approved`.
+6. Hand off: suggest `/sdd spec <first-feature>` and note that `specs/roadmap.md`
+   is now the living project index.
+
+Like every phase, this ends with an explicit approval gate before the file is
+written as `approved`.
+
+**Integration with `spec <name>`:** when `specs/roadmap.md` exists, the spec flow
+should lean on it instead of re-asking:
+- Take the feature's `NNN`, one-line purpose, and the project constraints
+  (`PC-*`) from the roadmap row — seed `1-requirements.md` with them rather than
+  re-deriving the number or re-asking project-wide constraints.
+- Flip the roadmap row's status to `specced` once the feature's spec set reaches
+  `approved`, and to `implemented` once its tasks are all `implemented`.
+
+The roadmap owns `NNN` assignment once it exists: `spec` reuses the roadmap's
+number for that feature instead of re-scanning `specs/`. `specs/roadmap.md` is a
+top-level file, not an `NNN` directory, so it never collides with feature
+numbering.
 
 ## Phase 1: Requirements (`1-requirements.md`)
 
@@ -516,6 +581,7 @@ When invoked as `/sdd $ARGUMENTS` or via natural language, route based on the fi
 
 | Subcommand | Behavior |
 |------------|----------|
+| `roadmap <project>` (alias `breakdown`) | Project decomposition: high-level description → ordered list of vertically-sliced features in `specs/roadmap.md`. Greenfield or large brownfield change. Each feature then runs `spec <name>`. Stops at roadmap approval. |
 | `spec <name>` | Full 3-phase spec flow (1-requirements.md → 2-design.md → 3-tasks.md). **Stops at 3-tasks.md approval.** Spec set is the deliverable. |
 | `design <name>` | Skip requirements, start from 2-design.md. Stops at 3-tasks.md approval. |
 | `tasks <name>` | Skip to task breakdown (design exists or is trivial). Stops at 3-tasks.md approval. |
@@ -524,9 +590,10 @@ When invoked as `/sdd $ARGUMENTS` or via natural language, route based on the fi
 | `review <name>` | Run the self-review suite over all tasks marked `Review: pending` in `specs/<NNN>-<name>/3-tasks.md`, then stamp them `passed`. Use after implementing with reviews deferred. |
 | `resume <name>` | Read existing specs from `specs/<NNN>-<name>/`, determine current state, and continue (see below). Also accepts just `resume <NNN>` — search for the directory matching that number. |
 
-**Numbering new specs:** Before creating `specs/<NNN>-<name>/`, run `ls specs/` (or the
-project's equivalent path) to find the highest existing `<NNN>`, then increment by one.
-If `specs/` doesn't exist yet, create it and start at `001`.
+**Numbering new specs:** If `specs/roadmap.md` exists and lists this feature, use the
+`NNN` it already assigned. Otherwise, before creating `specs/<NNN>-<name>/`, run
+`ls specs/` (or the project's equivalent path) to find the highest existing `<NNN>`,
+then increment by one. If `specs/` doesn't exist yet, create it and start at `001`.
 
 **Resuming (`resume <name>`):** Search `specs/` for a directory matching the name or
 number. Read all spec files inside. Determine the current state by checking:
@@ -538,6 +605,8 @@ number. Read all spec files inside. Determine the current state by checking:
 Present a brief summary of where things stand ("1-requirements.md approved, 2-design.md approved,
 3 of 8 tasks complete, 2 pending review — next up is task 4: ...") and confirm with
 the user before continuing. If tasks are pending review, mention `review <name>`.
+
+`breakdown` is an alias for `roadmap` — route both to Phase 0.
 
 If invoked with no arguments, ask the user which flow they want to start.
 

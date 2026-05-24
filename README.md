@@ -23,6 +23,10 @@ agent, then trigger implementation when ready.
 
 ## Workflow at a glance
 
+0. **(Opt-in) Roadmap / breakdown** — split a high-level description (greenfield
+   project or large brownfield change) into an ordered list of vertically-sliced,
+   deployable features, captured as a living index in `specs/roadmap.md`. Each
+   feature then runs the spec flow below.
 1. **Requirements** — what the feature does and why; testable acceptance
    criteria with stable IDs (`AC-1`, `C-1`, `NG-1`).
 2. **Design** — how it will be built; component boundaries, data flow,
@@ -70,6 +74,7 @@ after reviewing each task.
 |------|---------|
 | `SKILL.md` | Main skill instructions — loaded by the agent when SDD is triggered |
 | `AGENT-SNIPPET.md` | Paste into a project's agent instructions file (AGENTS.md, GEMINI.md, etc.) to enable SDD for non-Claude-Code agents |
+| `references/roadmap-template.md` | Template for the project decomposition / roadmap phase |
 | `references/requirements-template.md` | Template for the requirements phase |
 | `references/design-template.md` | Template for the design phase |
 | `references/tasks-template.md` | Template for the task breakdown phase |
@@ -82,6 +87,7 @@ In Claude Code, trigger naturally ("let's spec this out") or explicitly with
 `/sdd <subcommand>`:
 
 ```
+/sdd roadmap <project> split a project into vertically-sliced features (alias: breakdown)
 /sdd spec <name>       requirements → design → tasks (stops at tasks approval)
 /sdd design <name>     skip requirements, start from design
 /sdd tasks <name>      skip to task breakdown
