@@ -8,9 +8,11 @@ preferences. Not a generic SDD framework — opinions are baked in.
 Guides an agent through a structured spec-before-code workflow:
 
 ```
-requirements.md  →  design.md  →  tasks.md  ║  (analyze + implementation: opt-in)
-     ↑ approve        ↑ approve      ↑ approve
+requirements.md  →  design.md  →  tasks.md  →  ║ approve set ║  (analyze + implementation: opt-in)
 ```
+
+All three docs are produced in one pass, then reviewed and approved together at a
+single gate (you can still ask to review phase-by-phase).
 
 The **spec set is the deliverable.** Three short markdown files (requirements,
 design, tasks) live in the repo, version-controlled alongside code, and serve
@@ -34,7 +36,8 @@ agent, then trigger implementation when ready.
    agent run in parallel before drafting.
 3. **Tasks** — 5–15 ordered, file-scoped tasks, each pointing back to the
    spec sections it implements (drift detection touchpoint).
-4. **Stop.** The spec is reviewed by humans.
+4. **Approve the set.** All three docs are presented together; you steer or
+   approve in one pass, then the spec is reviewed by humans.
 5. **(Opt-in) Analyze** — cross-artifact consistency check: every requirement
    has a task, no constraint violations, no naming drift, no orphan tasks.
 6. **(Opt-in) Implement** — one task per agent turn. Agent stops after each
@@ -88,7 +91,7 @@ In Claude Code, trigger naturally ("let's spec this out") or explicitly with
 
 ```
 /sdd roadmap <project> split a project into vertically-sliced features (alias: breakdown)
-/sdd spec <name>       requirements → design → tasks (stops at tasks approval)
+/sdd spec <name>       requirements → design → tasks (stops at one spec-set approval)
 /sdd design <name>     skip requirements, start from design
 /sdd tasks <name>      skip to task breakdown
 /sdd bugfix <name>     test-first bug fix flow

@@ -48,24 +48,40 @@ SDD?" Don't unilaterally generate a 3-doc spec for a one-line fix.
 ## The three phases
 
 ```
-1-requirements.md  →  2-design.md  →  3-tasks.md  ║  (analyze + implementation: opt-in)
-       ↑ approve          ↑ approve       ↑ approve
+1-requirements.md  →  2-design.md  →  3-tasks.md  →  ║ approve set ║  (analyze + implementation: opt-in)
 ```
 
-**The spec set is the deliverable.** Once 3-tasks.md is approved, the workflow
-stops. The three docs are an artifact for engineering review — a colleague,
-a reviewer, or a future implementer reads them and decides what's next.
+The three docs are produced in one pass, then reviewed together. The agent writes
+all three back-to-back — asking clarifying questions *during* creation as needed
+(those are inputs, not gates) — then presents the complete set and waits for
+steering or approval before anything is implemented.
+
+**The spec set is the deliverable.** Once the set is approved, the workflow stops.
+The three docs are an artifact for engineering review — a colleague, a reviewer,
+or a future implementer reads them and decides what's next.
 
 Do NOT proceed to implementation automatically. Implementation only starts
 when the user explicitly says "let's implement", "start building", "do task
 1", or similar. At that point, run the cross-artifact analyze step (Phase 3.5)
 and then the implementation phase as described below.
 
-Every phase ends with an explicit approval gate. Do NOT advance to the next phase
-until the user says "approved", "lgtm", "go", "next", "y", or similar affirmative.
+**Single approval gate.** Produce all three docs without stopping for approval
+between them, each written as `> Status: draft`. Then present the set as a whole
+and wait. The user steers — tweaks or amendments to any of the three (see Steering)
+— or approves with "approved", "lgtm", "go", "y", or similar. On approval, flip
+all three to `approved`.
+
+Why one gate instead of three: per-phase approval burns round-trips. Producing the
+full set first lets the user review requirements, design, and tasks together, in
+context, and steer in a single pass. The trade-off: a steer on requirements can
+ripple into design and tasks — when it does, reconcile the whole set, don't patch
+one doc in isolation.
+
+If the user prefers phase-by-phase review ("stop after requirements", "let me
+approve each phase"), honor that and gate each phase instead.
 
 If the user asks to skip a phase (e.g., "skip requirements, I know what I want"), that's
-fine — acknowledge which phase you're skipping and proceed to the next one.
+fine — acknowledge which phase you're skipping and proceed.
 
 ## File layout
 
@@ -204,7 +220,9 @@ Key principles:
   is probably too big — suggest splitting.
 - Don't pad with obvious statements. A simple feature gets a simple doc.
 
-After writing, present the doc and wait for approval. On approval, set status to `approved`.
+Write it as `draft`, then continue straight to Phase 2 — do not stop for approval
+here (unless the user asked to gate each phase). Approval happens once, on the full
+set.
 
 ## Phase 2: Design (`2-design.md`)
 
@@ -234,10 +252,15 @@ Key principles:
   requirements doc already provides a clear answer.
 - Every design decision should trace back to a requirement or constraint.
 - Describe component boundaries and interfaces, not internal implementation details.
-- Include a data flow section. This catches integration issues early.
-- For diagrams: use Mermaid inline (sequence, flowchart, entity). For complex
-  visualizations that would be cramped in Mermaid, place a `.drawio` file and an
-  exported `.png`/`.svg` in `diagrams/` and reference the image from the doc.
+- Describe the data flow. For a linear, obvious flow, a few sentences or a short
+  list is enough — do not draw a diagram for it.
+- **Diagrams only earn their place when the logic is complex or a dependency/flow
+  is non-obvious** — branching/concurrent sequences, multi-component interactions,
+  state machines, or relationships that prose can't make clear. A diagram for a
+  simple request→service→DB→response path is noise; describe it in one line instead.
+  When a diagram is warranted, use Mermaid inline (sequence, flowchart, entity).
+  For complex visualizations that would be cramped in Mermaid, place a `.drawio`
+  file and an exported `.png`/`.svg` in `diagrams/` and reference the image from the doc.
 - Include a brief metrics section listing new or changed metrics (name + what it tracks).
   One line each — no alerting thresholds or implementation detail.
 - Name the alternatives you considered and why you rejected them. If significant
@@ -245,8 +268,16 @@ Key principles:
   bloating this doc — but keep a brief summary here so 2-design.md stays self-contained.
 - If the feature touches persistence, include schema. If it touches APIs, include
   request/response shapes.
+- **Keep it short — this is a lightweight workflow.** A typical design doc is
+  40-80 lines. The point of SDD here is to be lighter than heavyweight design
+  processes, not to produce an exhaustive spec. Capture the decisions and
+  boundaries a reviewer needs; omit anything they could infer from the code.
+  Skip sections that don't apply rather than filling them with "N/A" prose. If a
+  doc is ballooning past ~100 lines, the feature is probably too big — suggest
+  splitting it.
 
-After writing, present the doc and wait for approval. On approval, set status to `approved`.
+Write it as `draft`, then continue straight to Phase 3 — do not stop for approval
+here (unless the user asked to gate each phase).
 
 ## research.md (optional)
 
@@ -279,10 +310,16 @@ Key principles:
 - Mark complexity: `[small]`, `[medium]`, `[large]` to guide review cadence.
 - 5-15 tasks per feature. Fewer = too coarse. More = split the feature.
 
-After writing, present the doc and wait for approval. On approval, set status
-to `approved`. **This is the end of the default workflow.** The spec set is now
-ready for engineering review. Do not begin implementation unless the user
-explicitly asks for it.
+After writing this doc, all three are done. **Now present the full set —
+1-requirements.md, 2-design.md, 3-tasks.md — and wait for steering or approval.**
+On approval, flip all three to `approved`. **This is the end of the default
+workflow.** The spec set is now ready for engineering review. Do not begin
+implementation unless the user explicitly asks for it.
+
+If the user steers on the set (e.g. "tighten AC-2", "the design should use a
+queue", "drop task 5"), treat it per the Steering rules — and remember a change
+to an earlier doc can ripple forward, so reconcile design and tasks too before
+re-presenting.
 
 ## Phase 3.5: Cross-artifact analyze (after tasks, before implementation)
 
@@ -582,9 +619,9 @@ When invoked as `/sdd $ARGUMENTS` or via natural language, route based on the fi
 | Subcommand | Behavior |
 |------------|----------|
 | `roadmap <project>` (alias `breakdown`) | Project decomposition: high-level description → ordered list of vertically-sliced features in `specs/roadmap.md`. Greenfield or large brownfield change. Each feature then runs `spec <name>`. Stops at roadmap approval. |
-| `spec <name>` | Full 3-phase spec flow (1-requirements.md → 2-design.md → 3-tasks.md). **Stops at 3-tasks.md approval.** Spec set is the deliverable. |
-| `design <name>` | Skip requirements, start from 2-design.md. Stops at 3-tasks.md approval. |
-| `tasks <name>` | Skip to task breakdown (design exists or is trivial). Stops at 3-tasks.md approval. |
+| `spec <name>` | Full 3-phase spec flow — produces 1-requirements.md → 2-design.md → 3-tasks.md in one pass, then **stops at a single spec-set approval gate.** Spec set is the deliverable. |
+| `design <name>` | Skip requirements, produce 2-design.md → 3-tasks.md, then stop at spec-set approval. |
+| `tasks <name>` | Skip to task breakdown (design exists or is trivial). Stops at spec-set approval. |
 | `bugfix <name>` | Abbreviated, **test-first** flow using `./references/bugfix-template.md` — root cause → reproduction → failing regression test → fix approach → tasks. If the user can't describe repro steps, propose exploratory tests from code-reading hypotheses. No requirements phase. |
 | `implement <name>` | Begin implementation against an approved spec set. Runs Phase 3.5 (analyze) then implements one task per turn. Use this when the spec is reviewed and ready to build. |
 | `review <name>` | Run the self-review suite over all tasks marked `Review: pending` in `specs/<NNN>-<name>/3-tasks.md`, then stamp them `passed`. Use after implementing with reviews deferred. |

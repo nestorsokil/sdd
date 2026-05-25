@@ -16,11 +16,14 @@ For each component involved:
 - **Dependencies**: what it talks to
 
 ## Data flow
-How data moves through the system for the primary use case.
-Prefer a Mermaid diagram (sequence or flowchart). For complex visualizations, reference
+How data moves through the system for the primary use case. For a simple, linear
+flow, a few sentences or a short list is enough. Add a diagram ONLY when the logic
+is complex or a dependency/flow is non-obvious (branching, concurrency, multi-component
+interaction, state machine). Use Mermaid inline; for complex visualizations reference
 an image from the `diagrams/` folder instead.
 
 ```mermaid
+%% Example — include only when the flow is non-obvious
 sequenceDiagram
     Client->>Service: request
     Service->>DB: query
@@ -52,8 +55,14 @@ What could go wrong. How we mitigate or accept it.
 
 ## Guidance
 
-- Use Mermaid for inline diagrams. For large or complex visuals, place a `.drawio`
-  file and an exported `.png`/`.svg` in `diagrams/` and reference the image here.
+- **Keep it short — 40-80 lines is typical.** This is a lightweight workflow;
+  capture decisions and boundaries, not an exhaustive spec. Skip sections that
+  don't apply instead of filling them with "N/A".
+- **Diagrams only when they earn it.** Draw a diagram only for complex logic or a
+  non-obvious dependency/flow — branching, concurrency, multi-component interaction,
+  state machines. A simple request→service→DB→response path is prose, not a diagram.
+  Use Mermaid inline; for large or complex visuals, place a `.drawio` file and an
+  exported `.png`/`.svg` in `diagrams/` and reference the image here.
 - Describe logic in pseudo-code or plain language — full code snippets only when
   ambiguity would remain without them.
 - Include at least one rejected alternative for each significant decision.

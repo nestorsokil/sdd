@@ -18,9 +18,9 @@ and the agent will pick the right flow.
 | Subcommand | What it does |
 |------------|-------------|
 | `roadmap <project>` (alias `breakdown`) | Decompose a greenfield or large brownfield effort into an ordered list of vertically-sliced features (`specs/roadmap.md`). Feeds `spec <name>`. |
-| `spec <name>` | Spec flow only: requirements → design → tasks. Stops at tasks.md approval. |
-| `design <name>` | Skip requirements, start from design. Stops at tasks.md approval. |
-| `tasks <name>` | Skip to task breakdown. Stops at tasks.md approval. |
+| `spec <name>` | Spec flow only: requirements → design → tasks, produced in one pass. Stops at a single spec-set approval. |
+| `design <name>` | Skip requirements, start from design. Stops at spec-set approval. |
+| `tasks <name>` | Skip to task breakdown. Stops at spec-set approval. |
 | `bugfix <name>` | Abbreviated, test-first bug fix flow. |
 | `implement <name>` | Build against an approved spec set, one task per turn. |
 | `review <name>` | Run the self-review suite over tasks with deferred (`pending`) reviews. |
