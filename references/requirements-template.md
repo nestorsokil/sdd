@@ -24,10 +24,6 @@ One paragraph: what this feature does and why it matters.
 - What this feature explicitly does NOT do.
 - Prevents scope creep during design and implementation.
 - **Stable IDs** (`NG-1`, `NG-2`, …).
-
-## Open questions
-- Anything unresolved that needs input before design begins.
-- Remove this section once all questions are answered.
 ```
 
 ## Guidance

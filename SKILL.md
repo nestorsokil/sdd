@@ -125,7 +125,9 @@ the existing convention. Ask if unclear.
   as the work progresses:
   - `draft` — being written for the first time
   - `approved` — user has signed off; do not edit without re-opening
-  - `implemented` — all tasks complete; spec is now reference documentation
+  - `reviewing` — all tasks complete; self-review suite running or findings being
+    resolved. Transitions to `implemented` once review is clean and user approves.
+  - `implemented` — all tasks complete, review clean, user approved.
   - `amending` — previously `implemented`, now being changed for a follow-up.
     Use this instead of dropping back to `draft`, so the history "this was
     shipped once" stays visible. Treat the change as an amendment per the
@@ -152,7 +154,11 @@ the whole thing I want to build/change" and needs it split before any single
 `spec <name>` makes sense.
 
 **When NOT to use it:** a single, well-scoped feature — go straight to `spec`.
-A roadmap for one feature is overhead.
+A roadmap for one feature is overhead. Also skip it when the *whole* effort, even
+if loosely described, turns out small enough to ship as one increment: don't
+manufacture multiple features out of a small scope. Gauge the full scope first
+(step 2 below) and only decompose if there are genuinely separate, sequenceable
+features.
 
 Read the template: `./references/roadmap-template.md`
 
@@ -160,7 +166,15 @@ Read the template: `./references/roadmap-template.md`
 1. Clarify project-level intent first — vision, primary users, hard constraints,
    the MVP boundary, and anything explicitly out of scope. Same ask-don't-assume
    discipline as Phase 1, but at project granularity. Don't decompose on guesses.
-2. Understand the landscape, then propose a decomposition:
+2. **Gauge the full scope before splitting anything.** Once intent is clear, judge
+   whether the effort genuinely warrants decomposition. If the whole thing is small
+   enough to land as a single deployable increment — roughly one cohesive spec's
+   worth of work, no independent sub-features worth sequencing — do NOT produce a
+   roadmap. Say so plainly ("this is small enough for one feature — skipping the
+   roadmap") and route straight to `spec <name>` with the whole scope as that one
+   feature. A roadmap that lists a single feature is pure overhead. Only decompose
+   when there are real, separately-shippable features to sequence.
+3. Understand the landscape, then propose a decomposition:
    - **Brownfield** — run a codebase-exploration agent *and* an architecture
      agent in parallel (same pairing as Phase 2). The exploration agent maps the
      modules, seams, and existing patterns the effort will touch; the
@@ -170,19 +184,19 @@ Read the template: `./references/roadmap-template.md`
    In both cases the architecture agent proposes boundaries, dependency ordering,
    and which foundational/cross-cutting work (data model, auth, shared infra)
    comes first.
-3. **Slice features vertically.** Each feature should be a deployable increment —
+4. **Slice features vertically.** Each feature should be a deployable increment —
    a thin path through the stack that delivers user-observable value on its own,
    not a horizontal layer ("all the DB work", "all the API work") that ships
    nothing until a sibling lands. Prefer features that leave the system shippable
    when complete. Foundational/cross-cutting work that genuinely can't be sliced
    into a vertical (shared schema, auth substrate) is allowed as an early feature,
    but call it out as such rather than defaulting to layer-by-layer splits.
-4. Present the proposed feature list with your recommendation. This is
+5. Present the proposed feature list with your recommendation. This is
    interactive: surface the trade-offs of each boundary and let the user
    merge, split, or reorder. Don't silently decide the cut points.
-5. On approval, write `specs/roadmap.md` from the template — assign `NNN` in
+6. On approval, write `specs/roadmap.md` from the template — assign `NNN` in
    dependency order, every feature `planned`. Set the roadmap `Status: approved`.
-6. Hand off: suggest `/sdd spec <first-feature>` and note that `specs/roadmap.md`
+7. Hand off: suggest `/sdd spec <first-feature>` and note that `specs/roadmap.md`
    is now the living project index.
 
 Like every phase, this ends with an explicit approval gate before the file is
@@ -208,10 +222,11 @@ Goal: capture *what* the feature does and *why*.
 Read the template: `./references/requirements-template.md`
 
 Key principles:
-- Before writing, ask clarifying questions if the user's description is vague or leaves
-  meaningful gaps — who uses this, what triggers it, what happens on failure, what are
-  the boundaries. Don't draft a requirements doc built on guesses; get the answers first.
-  But don't interrogate — if the answer is obvious from context, just use it.
+- Ask clarifying questions whenever ambiguity arises — before writing, or mid-draft
+  if something unclear surfaces. Don't guess at business rules or edge cases; ask and
+  wait for an answer. Do NOT park unresolved questions in the doc as an "Open questions"
+  section — there is no such section. Clarify interactively, then write.
+  Don't interrogate — if the answer is obvious from context, just use it.
 - Acceptance criteria should be testable assertions, not vague descriptions.
   Bad: "The system should be fast." Good: "P95 latency < 200ms for single-item lookup."
 - List constraints and non-goals explicitly. Constraints prevent over-engineering.
@@ -370,23 +385,48 @@ approved decisions.
 
 ## Implementation phase
 
-Once the analyze report is clean and 3-tasks.md is still approved, before writing
-any code, **offer** to spawn a clean code and design review agent on the files
-the feature will touch most — surfacing existing issues in the landing zone
-before building on top of them. This is opt-in: ask the user, and skip it by
-default if the files were recently reviewed or the feature is greenfield.
+Once the analyze report is clean and 3-tasks.md is still approved, **before writing
+any code**, ask the user two things:
 
-**Default execution model: one task per agent turn.**
+**1. Git branch** — check whether a feature branch already exists (run `git branch`
+and `git status` to see the current branch). If the user is already on a dedicated
+feature branch, note it and continue. If they're on `main`/`master` or a shared
+branch, suggest creating a feature branch now. Let the user decide — they may prefer
+to work on main. Do not create a branch without their explicit go-ahead.
 
-The agent implements exactly one task, returns control, and stops. The user
-reviews the git diff, commits manually, then asks for the next task — possibly
-after `/compact` or in a fresh agent window. This keeps each task reviewable
-in isolation, keeps context lean, and puts the human in the loop for each commit.
+**2. Execution mode** — ask the user which cadence they want:
 
-The agent does NOT auto-continue, does NOT stage files, does NOT create commits.
-Any steering, drift findings, or amendments must land in the relevant spec doc
-(1-requirements.md / 2-design.md / 3-tasks.md) — not in a chat report. The user will
-review the spec edits in the same git diff as the code.
+| Mode | Behavior |
+|------|----------|
+| **Pause** (default) | Implement one task, stop. User reviews the diff, then asks for the next task. |
+| **All-in-one** | Implement all tasks back-to-back without stopping. One large diff at the end. |
+| **Auto-commit** | Implement one task, create a git commit for it, then continue to the next. User reviews commits individually after. |
+
+Wait for their answer before proceeding. If they don't express a preference, use **Pause**.
+
+Once branch and mode are settled, **offer** to spawn a clean code and design review
+agent on the files the feature will touch most — surfacing existing issues in the
+landing zone before building on top of them. This is opt-in: skip by default if the
+files were recently reviewed or the feature is greenfield.
+
+**Execution model details:**
+
+In **Pause** mode: the agent implements exactly one task, returns control, and stops.
+The user reviews the git diff, commits manually if they want, then asks for the next
+task — possibly after `/compact` or in a fresh agent window. The agent does NOT stage
+files or create commits.
+
+In **All-in-one** mode: the agent implements all tasks without stopping. Completion
+gate and drift scan still run per task internally, but control is not returned until
+the last task is done. The agent does NOT create commits.
+
+In **Auto-commit** mode: after each task passes its completion gate and drift scan,
+the agent creates a git commit scoped to that task, then continues to the next. Commit
+message references the task title and number. The user reviews the git log after.
+
+In all modes: any steering, drift findings, or amendments land in the relevant spec
+doc (1-requirements.md / 2-design.md / 3-tasks.md) — not in a chat report. The user
+reviews spec edits in the same diff/commit as the code.
 
 For each task:
 
@@ -415,21 +455,16 @@ For each task:
    check the task off until the spec and code agree.
 5. Check it off in 3-tasks.md: `- [x] Task description`. (Markdown edit, not a
    git commit — the user commits everything together.)
-6. **Offer self-review**: ask the user whether to run the self-review suite on
-   this task's diff now, or defer it. Record the outcome in the task's
-   `Review:` stamp:
-   - `passed` — review ran, no unresolved High/Critical findings (note any
-     accepted ones).
-   - `pending` — user deferred; the task ships unreviewed for now and can be
-     batch-reviewed later.
-7. State which task is next, then STOP. Do not start it.
-
-### Auto-continue (opt-in only)
-
-If the user explicitly asks to "auto-continue", "run all tasks", "go through
-the whole thing", or similar — only then chain tasks without stopping. Even in
-auto-continue, pause for confirmation on any tweak/amend/pivot, and never
-auto-commit.
+6. **Self-review**:
+   - **Pause mode**: offer to run the self-review suite on this task's diff now,
+     or defer. Record the outcome in the task's `Review:` stamp (`passed` /
+     `pending`).
+   - **All-in-one / Auto-commit mode**: skip the per-task offer — mark every task
+     `Review: pending` and run the full batch review automatically once the last
+     task is done (see Finishing up).
+7. In **Pause** mode: state which task is next, then STOP. Do not start it.
+   In **All-in-one** or **Auto-commit** mode: proceed to the next task automatically.
+   In all modes: pause for confirmation on any tweak/amend/pivot.
 
 ### Resuming in a fresh window
 
@@ -497,8 +532,21 @@ Opt-in extras — add when the diff warrants it (state which you're adding and w
 Use the user's project-specific agents where defined (e.g. `clean-code-reviewer`,
 `security-reviewer`). For reviews without a dedicated agent, dispatch the generic
 `Agent` tool with an inline prompt scoped to that review's concern. Synthesize
-findings into one report grouped by severity (Critical / High / Medium / Low),
-present it to the user, then update the `Review:` stamp of every task in scope.
+findings into one report grouped by severity (Critical / High / Medium / Low).
+
+**Handling findings:**
+- **Critical / High**: fix automatically without asking. Apply fixes, re-run the
+  completion gate (build + tests), and note each fix in the report ("auto-fixed").
+  If a fix requires a design decision or is ambiguous, stop and ask rather than
+  guessing — but this should be rare for well-scoped findings.
+- **Medium / Low**: present to the user for a decision; do not fix silently.
+
+**Findings file**: if the total finding count (across all severities, before fixes)
+is 5 or more, save the full report to `specs/<NNN>-<name>/review-findings.md`.
+Keep it even after fixes — it's a record of what was found and resolved.
+
+After handling findings, update the `Review:` stamp of every task in scope
+(`passed` — noting any auto-fixed or accepted items).
 
 ### Batch review (`review <name>`)
 
@@ -512,6 +560,25 @@ say "review the pending tasks".
 ### Finishing up
 
 When the last task is checked off:
+
+- **All-in-one / Auto-commit mode**: set spec status to `reviewing`, then
+  automatically run the batch self-review suite over all tasks (no prompt needed —
+  the user chose a hands-off mode). Auto-fix Critical/High findings per the suite
+  rules. Present the findings report (with fixes noted), then ask for approval.
+- **Pause mode**: if any tasks are still `Review: pending`, remind the user and
+  recommend running `review <name>` before approving.
+
+**Always request explicit approval before marking anything `implemented`.**
+Present a brief summary: tasks completed, review findings (if the suite ran), any
+accepted findings. Then ask: "Ready to mark this feature as implemented?"
+
+The user will often request changes at this point. Treat them like any mid-flight
+steer (Tweak / Amendment / Pivot) and apply the same rules: classify the change,
+update the relevant spec section(s) in the same diff as the code, do not let spec
+and code diverge. Don't mark `implemented` until those changes are done and the
+user re-confirms.
+
+Once the user approves:
 - If every task is `Review: passed` (or the user accepted outstanding findings),
   set status to `implemented` in 1-requirements.md, 2-design.md, and 3-tasks.md.
   The specs are now reference documentation.
