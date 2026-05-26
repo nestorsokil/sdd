@@ -78,6 +78,7 @@ after reviewing each task.
 | `SKILL.md` | Main skill instructions — loaded by the agent when SDD is triggered |
 | `AGENT-SNIPPET.md` | Paste into a project's agent instructions file (AGENTS.md, GEMINI.md, etc.) to enable SDD for non-Claude-Code agents |
 | `references/roadmap-template.md` | Template for the project decomposition / roadmap phase |
+| `references/sprint-template.md` | Template for the single-file sprint (fast-path) plan |
 | `references/requirements-template.md` | Template for the requirements phase |
 | `references/design-template.md` | Template for the design phase |
 | `references/tasks-template.md` | Template for the task breakdown phase |
@@ -92,6 +93,7 @@ In Claude Code, trigger naturally ("let's spec this out") or explicitly with
 ```
 /sdd roadmap <project> split a project into vertically-sliced features (alias: breakdown)
 /sdd spec <name>       requirements → design → tasks (stops at one spec-set approval)
+/sdd sprint <name>     fast path: interview → one-file plan → build → review (interviews, hackathons)
 /sdd design <name>     skip requirements, start from design
 /sdd tasks <name>      skip to task breakdown
 /sdd bugfix <name>     test-first bug fix flow

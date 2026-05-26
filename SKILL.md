@@ -9,7 +9,10 @@ description: >
   or references requirements/design/tasks documents for a feature. Trigger the roadmap
   flow when the user says "roadmap", "breakdown", "break this into features", "split the
   project", or describes a large greenfield/brownfield effort needing decomposition before
-  any single spec. This skill produces
+  any single spec. Trigger the sprint flow when the user says "sprint", "fast
+  path", "time-boxed", "hackathon", "spike", or wants a quick
+  single-feature build where working code (not a spec set) is the deliverable.
+  This skill produces
   markdown spec files (requirements, design, tasks) that live in the repo alongside code
   and act as durable context for implementation. Do NOT trigger for one-off
   questions, quick bug fixes the user wants done immediately, or when the user just wants
@@ -90,6 +93,7 @@ fine — acknowledge which phase you're skipping and proceed.
 specs/
   roadmap.md             (optional — greenfield/multi-feature decomposition; living index)
   <NNN>-<feature-name>/
+    0-sprint-plan.md     (sprint mode only — replaces the three docs below)
     1-requirements.md
     2-design.md
     3-tasks.md
@@ -142,6 +146,58 @@ the existing convention. Ask if unclear.
   specs are worse than no specs.
 
 ---
+
+## Sprint mode (fast path, `sprint <name>`)
+
+A time-boxed, single-file path for when working code — not a spec set — is the
+deliverable and the clock matters: coding interviews, hackathons, spikes, quick
+prototypes, or any single short-description build. It keeps SDD's *thinking*
+(clarify first, happy-path-first increments, tests with code, drift discipline,
+and the full self-review suite before shipping) and drops only the *artifact
+ceremony*: no roadmap, no 3-doc split, no Phase 3.5 analyze — everything lives
+in one file.
+
+**When to use it:** a single feature from a short description, where you want to
+demonstrate or reach a runnable result fast. **When NOT to:** multi-feature
+efforts (use `roadmap`), or anything where the reviewed spec set itself is the
+goal (use `spec`). If scope balloons mid-sprint, say so and switch to `spec`.
+
+Read the template: `./references/sprint-template.md`
+
+**Flow:**
+1. **Interview for ambiguities.** Ask the targeted questions that change the
+   *shape* of the build — data model, persistence vs in-memory, scope cuts,
+   key interfaces, what's explicitly out. 2-4 questions, not an interrogation;
+   skip anything with an obvious answer. This is the one place to spend time up
+   front.
+2. **Write one file:** `specs/<NNN>-<name>/0-sprint-plan.md` from the template —
+   sharpened goal, captured decisions (`D-1`, …), a happy-path-first task list,
+   and a verification smoke test. No other docs. `<NNN>` follows the same
+   numbering scheme as the full flow.
+3. **One steering + approval gate.** Present the file as `draft`. User tweaks
+   (inline edits to goal/decisions/tasks) or approves ("go", "lgtm", …). On
+   approval flip to `approved`.
+4. **Implement.** Same rules as the full implementation phase — happy-path-first
+   ordering, the per-task completion gate (build passes, pre-existing tests stay
+   green, new logic covered by a unit test in the same change), and drift
+   discipline. **Default execution mode is All-in-one** (the clock matters);
+   offer Auto-commit if the user wants per-task commits. Track progress by
+   checking off tasks *in the same `0-sprint-plan.md`* — no separate tasks doc.
+5. **Self-review before shipping (unchanged from the full flow).** When the last
+   task is done, set status to `reviewing` and run the full self-review suite —
+   the parallel-agent run described in [Self-review suite](#self-review-suite):
+   spec-conformance, correctness, and security in parallel, plus any warranted
+   extras. **Auto-fix Critical/High findings** and re-run the completion gate;
+   present Medium/Low for a decision. Save a findings file if 5+ findings, same
+   threshold as the full flow. The single `0-sprint-plan.md` plays the role of
+   requirements+design for the conformance review — point the reviewer at it.
+6. **Finish.** Run the verification smoke test, request approval, then flip
+   status to `implemented`. Do not flip while unresolved High/Critical findings
+   remain.
+
+Steering during a sprint uses the same Tweak / Amendment / Pivot rules, but all
+edits land in the one file. Status lifecycle: `draft` → `approved` →
+`reviewing` → `implemented`.
 
 ## Phase 0: Roadmap (`specs/roadmap.md`, project decomposition)
 
@@ -702,6 +758,7 @@ When invoked as `/sdd $ARGUMENTS` or via natural language, route based on the fi
 |------------|----------|
 | `roadmap <project>` (alias `breakdown`) | Project decomposition: high-level description → ordered list of vertically-sliced features in `specs/roadmap.md`. Greenfield or large brownfield change. Each feature then runs `spec <name>`. Stops at roadmap approval. |
 | `spec <name>` | Full 3-phase spec flow — produces 1-requirements.md → 2-design.md → 3-tasks.md in one pass, then **stops at a single spec-set approval gate.** Spec set is the deliverable. |
+| `sprint <name>` | Fast path for time-boxed builds (interviews, hackathons, spikes). Interview for ambiguities → single `0-sprint-plan.md` (goal, decisions, happy-path-first tasks) → one approval gate → implement All-in-one → full self-review suite → `implemented`. Working code is the deliverable. Drops roadmap/3-doc split/Phase 3.5; keeps tests, drift discipline, and parallel-agent review. |
 | `design <name>` | Skip requirements, produce 2-design.md → 3-tasks.md, then stop at spec-set approval. |
 | `tasks <name>` | Skip to task breakdown (design exists or is trivial). Stops at spec-set approval. |
 | `bugfix <name>` | Abbreviated, **test-first** flow using `./references/bugfix-template.md` — root cause → reproduction → failing regression test → fix approach → tasks. If the user can't describe repro steps, propose exploratory tests from code-reading hypotheses. No requirements phase. |
@@ -715,7 +772,10 @@ When invoked as `/sdd $ARGUMENTS` or via natural language, route based on the fi
 then increment by one. If `specs/` doesn't exist yet, create it and start at `001`.
 
 **Resuming (`resume <name>`):** Search `specs/` for a directory matching the name or
-number. Read all spec files inside. Determine the current state by checking:
+number. Read all spec files inside. If the directory contains `0-sprint-plan.md`,
+it's a sprint — read that single file, report its status and how many tasks are
+checked off, and continue per Sprint mode. Otherwise determine the current state
+by checking:
 1. Which spec files exist and their `> Status:` line.
 2. If 3-tasks.md exists and is approved, how many tasks are checked off.
 3. How many checked-off tasks are still `Review: pending` (shipped but unreviewed).

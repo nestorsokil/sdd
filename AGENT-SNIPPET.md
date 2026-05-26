@@ -19,6 +19,7 @@ and the agent will pick the right flow.
 |------------|-------------|
 | `roadmap <project>` (alias `breakdown`) | Decompose a greenfield or large brownfield effort into an ordered list of vertically-sliced features (`specs/roadmap.md`). Feeds `spec <name>`. |
 | `spec <name>` | Spec flow only: requirements → design → tasks, produced in one pass. Stops at a single spec-set approval. |
+| `sprint <name>` | Fast path for time-boxed builds. Interview → single `0-sprint-plan.md` → one approval → implement All-in-one → full self-review → `implemented`. Working code is the deliverable. |
 | `design <name>` | Skip requirements, start from design. Stops at spec-set approval. |
 | `tasks <name>` | Skip to task breakdown. Stops at spec-set approval. |
 | `bugfix <name>` | Abbreviated, test-first bug fix flow. |
