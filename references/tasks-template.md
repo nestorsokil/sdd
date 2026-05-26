@@ -29,10 +29,12 @@ How to verify the feature works end-to-end after all tasks are complete.
   covered by a unit test in the same change). "Create entity, repository, service,
   and controller" is four tasks.
 - **Unit tests ride with their task** — do not add a trailing "write tests" task.
-  **Integration tests are usually their own dedicated task near the end** (heavier:
-  containers, external services). Exception: fold an integration test into a task
-  when the user asks, or when the project's existing integration tests are granular
-  enough that the task's behavior is naturally covered there.
+  **An integration test rides with each service-facing task too**: black-box /
+  out-of-service preferred (start the real service, hit its real interface), with
+  in-process integration (Spring or other in-process harness) as the fallback when
+  black-box is clumsy (CLI, library, embedded). Never mock-stub the unit's own
+  collaborators. Extend the existing integration suite rather than building new
+  infrastructure. Pure wiring/config or non-service-facing tasks are exempt.
 - File paths are critical — they turn abstract plans into executable instructions.
 - Complexity hints guide review cadence:
   - `[small]` — boilerplate, config, simple wiring. Can chain these.

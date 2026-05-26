@@ -179,7 +179,8 @@ Read the template: `./references/sprint-template.md`
    approval flip to `approved`.
 4. **Implement.** Same rules as the full implementation phase — happy-path-first
    ordering, the per-task completion gate (build passes, pre-existing tests stay
-   green, new logic covered by a unit test in the same change), and drift
+   green, new logic covered by a unit test, and a per-task integration test for
+   service-facing behavior — black-box preferred, in-process fallback), and drift
    discipline. **Default execution mode is All-in-one** (the clock matters);
    offer Auto-commit if the user wants per-task commits. Track progress by
    checking off tasks *in the same `0-sprint-plan.md`* — no separate tasks doc.
@@ -387,12 +388,18 @@ Key principles:
   happy-path slice → tests that make it runnable/verifiable → edge cases → tests
   for those → next slice. Each task still builds on the previous, but the goal is
   a working increment early, not a complete foundation before any behavior works.
-- **Happy-path verification can come early.** Unit tests still ride with each
-  task (the completion gate). On top of that, a smoke or integration test proving
-  the happy-path slice actually runs end-to-end is worth scheduling *right after*
-  that slice — not deferred to a trailing task — so the increment is provably
-  runnable before edge cases pile on. Heavier/exhaustive integration tests still
-  default to a dedicated task near the end (see implementation Testing guidance).
+- **Each task ships unit tests AND an integration test.** Besides the unit tests
+  that ride with each task, every task that touches service-facing behavior gets
+  at least one integration test. Prefer black-box / out-of-service: start the real
+  service, hit it over its real interface (HTTP/gRPC/queue), assert the observable
+  result. When black-box is clumsy or doesn't fit (CLI, library, embedded), fall
+  back to second-best — an in-process integration test (Spring integration or any
+  other in-process harness). Either way, don't mock-stub the unit's own
+  collaborators; mock only true external third parties (see global testing rules).
+  The happy-path slice's integration test comes first (proves the increment runs
+  end-to-end); each later task extends coverage to its slice or edge case. Pure
+  wiring/config or non-service-facing logic tasks are exempt — state so. Applies
+  in both the full flow and sprint mode.
 - Mark complexity: `[small]`, `[medium]`, `[large]` to guide review cadence.
 - 5-15 tasks per feature. Fewer = too coarse. More = split the feature.
 
@@ -506,7 +513,7 @@ For each task:
    refactors, reformatting, or unrelated changes. A task's diff should be one
    self-contained, reviewable unit; mixed diffs are the main thing that slows
    human review.
-3. **Completion gate** — the task is not done until all three hold. If any
+3. **Completion gate** — the task is not done until all of these hold. If any
    fails, fix it before checking off (do not defer to a later task):
    - **Build passes**: the project compiles / type-checks. A task that leaves
      the repo unbuildable is not complete.
@@ -518,6 +525,11 @@ For each task:
      least one unit test *in this same diff* — either new or an extended
      existing test. A task that adds logic without a test is not done. (Pure
      wiring/config tasks with no new logic are exempt; say so explicitly.)
+   - **Integration test for service-facing behavior**: any task that adds or
+     changes service-facing behavior ships at least one integration test in the
+     same diff — black-box / out-of-service preferred, in-process as fallback
+     (see [Testing guidance](#testing-guidance)). Pure wiring/config or
+     non-service-facing logic tasks are exempt; say so explicitly.
    This gate keeps the repo in a working, tested state after every task, so any
    checked-off task is a safe stopping point.
 4. **Drift scan**: compare the diff against the task's "Spec touchpoints" and
@@ -551,16 +563,15 @@ user can also just say "next task" once the spec context is loaded.
   first decide whether it's a direct consequence of this task's change or an
   unrelated regression. For an unrelated regression, explain it and STOP for
   user input before proceeding — do not paper over it to make the gate pass.
-- **Integration tests — default to a separate task.** Unit-level coverage rides
-  with each implementation task (the gate); integration tests are typically
-  heavier (containers, external services, long runtimes) and are best batched
-  into their own dedicated task near the end of the breakdown. Exception: a task
-  warrants its own inline integration test when the user explicitly asks for it,
-  or when the agent judges — based on the granularity of the project's existing
-  integration tests — that this task's behavior is naturally covered at that
-  level (e.g. the project already has a per-endpoint integration test and this
-  task adds an endpoint). When the agent makes that call, state the reasoning
-  and let the user override.
+- **Integration tests — one per service-facing task (ride with the task).**
+  Enforced by the completion gate. Prefer black-box / out-of-service: start the
+  real service and exercise it over its real interface (HTTP/gRPC/queue). Reach
+  for in-process integration (Spring integration or any in-process harness) only
+  as the fallback when black-box is clumsy or doesn't fit — CLIs, libraries,
+  embedded components. Never mock-stub the unit's own collaborators; mock only
+  true external third parties. Keep each one high-level, short, and fast — extend
+  the project's existing integration suite rather than building parallel
+  infrastructure. Pure wiring/config or non-service-facing logic tasks are exempt.
 - **Integration / performance / property tests** are heavier — consult the
   project's test setup. In most cases suggest running them manually rather than
   triggering automatically. At the end of implementation, remind the user which

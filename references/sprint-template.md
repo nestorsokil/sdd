@@ -36,9 +36,12 @@ The smoke test: "start the app, hit X, expect Y" or "run suite, all green."
   how they were settled. Stable IDs (`D-1`, …) so tasks can reference them. Skip
   decisions with obvious answers; capture only what a reader couldn't infer.
 - **Tasks**: 4-10 items, happy-path-first. The first task(s) build the thinnest
-  end-to-end slice; an early task makes it provably runnable (smoke/integration
-  test); later tasks layer edge cases. Unit tests still ride with each task. Mark
-  the happy-path slice explicitly so the runnable milestone is visible.
+  end-to-end slice; an early task makes it provably runnable (integration test);
+  later tasks layer edge cases. Unit tests ride with each task, and each
+  service-facing task also ships an integration test — black-box / out-of-service
+  preferred (hit the real running service), in-process as fallback for CLIs or
+  libraries. Mark the happy-path slice explicitly so the runnable milestone is
+  visible.
 - No `[small]/[medium]` complexity tags, no per-task `Spec:`/`Review:` stamps —
   this is the lean path. If you find yourself wanting them, you want the full
   `spec` flow, not `sprint`.

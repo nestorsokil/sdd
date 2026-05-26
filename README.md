@@ -93,7 +93,7 @@ In Claude Code, trigger naturally ("let's spec this out") or explicitly with
 ```
 /sdd roadmap <project> split a project into vertically-sliced features (alias: breakdown)
 /sdd spec <name>       requirements → design → tasks (stops at one spec-set approval)
-/sdd sprint <name>     fast path: interview → one-file plan → build → review (interviews, hackathons)
+/sdd sprint <name>     fast path: interview → one-file plan → build → review (smaller features, quick POC, hackathons)
 /sdd design <name>     skip requirements, start from design
 /sdd tasks <name>      skip to task breakdown
 /sdd bugfix <name>     test-first bug fix flow
