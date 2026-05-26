@@ -35,12 +35,13 @@ Before invoking the workflow, sanity-check the scope. SDD is overhead for
 genuinely small changes. If all of the following are true, skip SDD and just
 do the work:
 
-- Change fits in <50 LOC and one or two files.
+- Change fits in <200 LOC and 2-3 files.
 - No new behavior — only a typo, config bump, log line, formatting, or
   rename.
 - No new contract (no API change, no schema change, no new dependency).
 - A test failure or commit message would be enough context for a future
   reader.
+- Time-sensitive: when user signals this needs a quick update.
 
 When in doubt, ask: "this looks small — do you want me to just do it, or run
 SDD?" Don't unilaterally generate a 3-doc spec for a one-line fix.
@@ -191,6 +192,10 @@ Read the template: `./references/roadmap-template.md`
    when complete. Foundational/cross-cutting work that genuinely can't be sliced
    into a vertical (shared schema, auth substrate) is allowed as an early feature,
    but call it out as such rather than defaulting to layer-by-layer splits.
+   Order features so each lands a runnable increment: get the first feature's
+   happy path working and verifiable, then move to the next, rather than building
+   broad foundations across many features before any one runs. Within each
+   feature, the same happy-path-first cadence applies at task level (see Phase 3).
 5. Present the proposed feature list with your recommendation. This is
    interactive: surface the trade-offs of each boundary and let the user
    merge, split, or reorder. Don't silently decide the cut points.
@@ -318,10 +323,20 @@ Key principles:
 - Each task should be independently verifiable — after completing it, something
   observable changed (a test passes, an endpoint responds, a log line appears).
 - Include file paths. This makes each task actionable without re-reading the design.
-- Order so each builds on the previous. Foundation first, then logic, then wiring.
-  Integration tests are usually their own dedicated task near the end, unless a
-  task's behavior is naturally covered by the project's existing integration-test
-  granularity (see implementation Testing guidance).
+- **Order for the fastest runnable increment — happy path first (walking
+  skeleton).** Build the thinnest end-to-end slice that makes one real path run
+  and be verifiable, then layer edge cases, error handling, and validation as
+  follow-on tasks. Build only the foundation the happy path needs — do NOT
+  front-load all infrastructure before anything runs. The cadence is: thin
+  happy-path slice → tests that make it runnable/verifiable → edge cases → tests
+  for those → next slice. Each task still builds on the previous, but the goal is
+  a working increment early, not a complete foundation before any behavior works.
+- **Happy-path verification can come early.** Unit tests still ride with each
+  task (the completion gate). On top of that, a smoke or integration test proving
+  the happy-path slice actually runs end-to-end is worth scheduling *right after*
+  that slice — not deferred to a trailing task — so the increment is provably
+  runnable before edge cases pile on. Heavier/exhaustive integration tests still
+  default to a dedicated task near the end (see implementation Testing guidance).
 - Mark complexity: `[small]`, `[medium]`, `[large]` to guide review cadence.
 - 5-15 tasks per feature. Fewer = too coarse. More = split the feature.
 
