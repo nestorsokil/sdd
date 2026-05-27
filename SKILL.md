@@ -1,22 +1,6 @@
 ---
 name: sdd
-description: >
-  Spec-Driven Development workflow — a lightweight, phased approach to building features
-  through structured specs before writing code. Use this skill whenever the user says
-  "spec", "sdd", "design first", "write a spec", "spec-driven", or asks to plan a feature
-  before implementing it. Also trigger when the user says things like "let's think through
-  this before coding", "I want to design this properly", "break this down into phases",
-  or references requirements/design/tasks documents for a feature. Trigger the roadmap
-  flow when the user says "roadmap", "breakdown", "break this into features", "split the
-  project", or describes a large greenfield/brownfield effort needing decomposition before
-  any single spec. Trigger the sprint flow when the user says "sprint", "fast
-  path", "time-boxed", "hackathon", "spike", or wants a quick
-  single-feature build where working code (not a spec set) is the deliverable.
-  This skill produces
-  markdown spec files (requirements, design, tasks) that live in the repo alongside code
-  and act as durable context for implementation. Do NOT trigger for one-off
-  questions, quick bug fixes the user wants done immediately, or when the user just wants
-  code written without planning.
+description: Spec-Driven Development workflow — a lightweight, phased approach to building features through structured specs before writing code. Trigger when the user says "spec", "sdd", "design first", "write a spec", "spec-driven", "roadmap", "breakdown", "sprint", "spike", asks to plan a feature before implementing, or references requirements/design/tasks documents. Do NOT trigger for one-off questions, quick bug fixes, or when the user just wants code written without planning.
 ---
 
 # Spec-Driven Development (SDD)
