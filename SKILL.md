@@ -82,6 +82,7 @@ specs/
     2-design.md
     3-tasks.md
     research.md          (optional — only when design alternatives were discussed)
+    migration.md         (optional — only when rollout needs manual steps / backward-compat handling)
     diagrams/            (optional — drawio files + exported images)
       *.drawio
       *.png / *.svg
@@ -329,6 +330,9 @@ Key principles:
   bloating this doc — but keep a brief summary here so 2-design.md stays self-contained.
 - If the feature touches persistence, include schema. If it touches APIs, include
   request/response shapes.
+- If rollout isn't automatic — manual steps, a data backfill/reshape, a deprecation,
+  deploy-ordering, or backward-compat concerns for existing data/clients — write a
+  `migration.md` (see below). Skip it for changes that ship cleanly.
 - **Keep it short — this is a lightweight workflow.** A typical design doc is
   40-80 lines. The point of SDD here is to be lighter than heavyweight design
   processes, not to produce an exhaustive spec. Capture the decisions and
@@ -348,6 +352,24 @@ direction won.
 
 Do NOT create it for routine decisions. Only when real back-and-forth happened and the
 fuller context is worth preserving as documentation.
+
+## migration.md (optional)
+
+Create this file when rolling the feature out is not automatic — there are manual
+steps an operator must run, a data backfill/reshape, a deprecation, a deploy-ordering
+constraint, or backward-compatibility concerns for existing data/clients.
+
+Read the template: `./references/migration-template.md`
+
+It captures the *rollout*, not the *design*: ordered manual steps, how existing
+data/clients keep working during and after the change, the rollback story, and how
+to verify the migration landed. 2-design.md says what the new shape is; migration.md
+says how you get existing systems there without breaking them.
+
+Do NOT create it for changes that ship cleanly — no manual steps, no data reshaping,
+backward-compatible by construction. When migration work is substantial, prefer
+turning the steps into real tasks in 3-tasks.md over long prose here; migration.md
+then just records ordering, compatibility, and rollback.
 
 ## Phase 3: Tasks (`3-tasks.md`)
 
@@ -795,7 +817,6 @@ For diagrams: commit both the `.drawio` source (for editing) and the exported
 
 The templates are defaults. The user might customize:
 - Add an `adr.md` phase for architectural decisions.
-- Add a `migration.md` phase for data migrations.
 - Drop user-story format for solo-developer projects.
 - Change the spec path convention.
 
